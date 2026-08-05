@@ -4,10 +4,11 @@ Valmis staattinen verkkosivusto GitHub Pagesiin.
 
 ## Ennen julkaisua
 
-1. Avaa `script.js` ja vaihda `CONTACT`-kohtaan oikea sähköposti ja puhelinnumero.
-2. Avaa `index.html` ja tarkista hinnat, yrityksen virallinen nimi sekä Y-tunnus.
-3. Vaihda `robots.txt`- ja `sitemap.xml`-tiedostoihin oma domain.
-4. Tarvittaessa muuta palvelualue tai palveluiden rajaukset.
+1. Avaa `index.html` ja tarkista hinnat.
+2. Vaihda `robots.txt`- ja `sitemap.xml`-tiedostoihin oma domain.
+3. Tarvittaessa muuta palvelualue tai palveluiden rajaukset.
+
+Sivustolle on lisätty kevytyrittäjyys sekä yhteystiedot 050 556 1219 ja autosahkoapu@gmail.com.
 
 ## Julkaisu GitHub Pagesissa
 
