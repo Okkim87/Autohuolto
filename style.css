@@ -39,3 +39,45 @@ img,svg,video{max-width:100%;height:auto}
   .section h2{font-size:1.9rem}
   .hero-card,.contact-form,.service-card,.price-card{padding-left:18px;padding-right:18px}
 }
+
+/* Mobiilikorjaus: estä kaikki vaakasuuntainen ylivuoto */
+html,body{max-width:100%;overflow-x:clip}
+.hero-copy,.hero-copy h1,.hero-copy h1 span,.hero-actions,.trust-row{min-width:0;max-width:100%}
+
+@media(max-width:620px){
+  .container{width:auto;max-width:none;margin-left:16px;margin-right:16px}
+  .hero-grid{display:block}
+  .hero-copy{width:100%;max-width:100%}
+  .hero h1{
+    width:100%;
+    max-width:100%;
+    font-size:clamp(1.95rem,8.8vw,2.35rem);
+    line-height:1.05;
+    letter-spacing:-.035em;
+    overflow-wrap:anywhere;
+    word-break:break-word;
+    hyphens:auto;
+  }
+  .hero h1 span{
+    display:inline;
+    max-width:100%;
+    overflow-wrap:anywhere;
+    word-break:break-word;
+    hyphens:auto;
+  }
+  .eyebrow{font-size:.72rem;letter-spacing:.13em;overflow-wrap:anywhere}
+  .lead{width:100%;max-width:100%;font-size:1rem;overflow-wrap:anywhere}
+  .hero-actions{display:grid;grid-template-columns:1fr;gap:10px;width:100%}
+  .hero-actions .button{width:100%}
+  .trust-row{display:grid;grid-template-columns:1fr;gap:8px;width:100%}
+  .trust-row span{width:100%;text-align:center}
+  .hero-card{margin-top:34px}
+}
+
+@media(max-width:390px){
+  .container{margin-left:13px;margin-right:13px}
+  .hero h1{font-size:1.9rem}
+  .brand strong{font-size:.8rem}
+  .brand small{font-size:.59rem}
+  .menu-button{padding:8px 10px}
+}
