@@ -5,10 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Auton pienhuollot ja diagnostiikka | Laukaa, Leppävesi & Jyväskylä</title>
   <meta name="description" content="Ammattitaitoiset auton pienhuollot, vikadiagnostiikka, sähkövikojen selvitys ja akun testaus Leppävedellä, Laukaassa ja Jyväskylässä. Yli 12 vuoden kokemus autoalalta.">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <link rel="canonical" href="https://autosahkoapu.fi/">
   <meta name="theme-color" content="#0a0d12">
   <meta property="og:title" content="Mikko Minkkinen – Autopalvelut">
   <meta property="og:description" content="Pienhuollot, diagnostiikka ja sähkövikojen selvitys ilman korjaamon raskasta kulurakennetta.">
   <meta property="og:type" content="website">
+  <meta property="og:url" content="https://autosahkoapu.fi/">
+  <meta property="og:site_name" content="Mikko Minkkinen – Autopalvelut">
   <meta property="og:locale" content="fi_FI">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="style.css">
@@ -16,12 +20,28 @@
   {
     "@context": "https://schema.org",
     "@type": "AutoRepair",
+    "@id": "https://autosahkoapu.fi/#business",
     "name": "Mikko Minkkinen – Autopalvelut",
-    "description": "Auton pienhuollot, diagnostiikka ja sähkövikojen selvitys.",
-    "areaServed": ["Leppävesi", "Laukaa", "Jyväskylä"],
-    "priceRange": "€€",
+    "url": "https://autosahkoapu.fi/",
+    "description": "Auton pienhuollot, vikadiagnostiikka ja sähkövikojen selvitys Leppävedellä, Laukaassa ja Jyväskylässä kevytyrittäjänä.",
     "telephone": "+358505561219",
-    "email": "autosahkoapu@gmail.com"
+    "email": "autosahkoapu@gmail.com",
+    "priceRange": "€€",
+    "areaServed": [
+      {"@type":"City","name":"Jyväskylä"},
+      {"@type":"AdministrativeArea","name":"Laukaa"},
+      {"@type":"Place","name":"Leppävesi"}
+    ],
+    "hasOfferCatalog": {
+      "@type": "OfferCatalog",
+      "name": "Autopalvelut",
+      "itemListElement": [
+        {"@type":"Offer","itemOffered":{"@type":"Service","name":"Autodiagnostiikka ja vikakoodien luku"}},
+        {"@type":"Offer","itemOffered":{"@type":"Service","name":"Autosähkövikojen vianmääritys"}},
+        {"@type":"Offer","itemOffered":{"@type":"Service","name":"Auton pienhuollot"}},
+        {"@type":"Offer","itemOffered":{"@type":"Service","name":"Akun ja latausjärjestelmän testaus"}}
+      ]
+    }
   }
   </script>
 </head>
@@ -93,12 +113,14 @@
             <span class="service-icon">01</span>
             <h3>Vikadiagnostiikka</h3>
             <p>Vikakoodien luku, livedatan tarkastelu, oireen rajaus ja jatkotoimenpidesuositus.</p>
+            <a class="seo-link" href="autodiagnostiikka-jyvaskyla.html">Autodiagnostiikka Jyväskylässä →</a>
             <ul><li>Moottorin vikavalo</li><li>ABS- ja turvajärjestelmät</li><li>Lataus- ja käynnistysongelmat</li></ul>
           </article>
           <article class="service-card reveal">
             <span class="service-icon">02</span>
             <h3>Sähkövikojen selvitys</h3>
             <p>Johdotusten, sulakkeiden, releiden, antureiden ja virrankulutuksen järjestelmällinen mittaus.</p>
+            <a class="seo-link" href="autosahko-jyvaskyla.html">Autosähköapu Jyväskylässä →</a>
             <ul><li>Akku tyhjenee</li><li>Laite ei toimi</li><li>Satunnaiset sähköviat</li></ul>
           </article>
           <article class="service-card reveal">
@@ -111,6 +133,7 @@
             <span class="service-icon">04</span>
             <h3>Pienhuollot</h3>
             <p>Auton rakenteen ja työskentelypaikan salliessa määräaikaishuollon tavallisimmat työt.</p>
+            <a class="seo-link" href="auton-pienhuolto-laukaa.html">Pienhuolto Laukaassa →</a>
             <ul><li>Öljyn ja suodattimien vaihto</li><li>Sytytystulpat</li><li>Pyyhkijät ja polttimot</li></ul>
           </article>
           <article class="service-card reveal">
@@ -129,6 +152,17 @@
 
         <div class="notice reveal">
           <strong>Rajaus:</strong> En tee nosturia vaativia töitä, rengastöitä ilman asianmukaista kalustoa, nelipyöräsuuntauksia, katsastuskorjauksia sokkona tai korkeajännitejärjestelmään kohdistuvia töitä ilman tapauskohtaista turvallisuus- ja työtilaarviota.
+        </div>
+
+        <div class="local-links reveal">
+          <h3>Paikalliset autopalvelut</h3>
+          <p>Palvelen Leppävedellä, Laukaassa ja Jyväskylässä. Katso tarkemmat palvelukuvaukset:</p>
+          <div class="local-link-grid">
+            <a href="autodiagnostiikka-jyvaskyla.html"><strong>Autodiagnostiikka Jyväskylä</strong><span>Vikakoodit, livedata ja vianrajaus</span></a>
+            <a href="autosahko-jyvaskyla.html"><strong>Autosähkö Jyväskylä</strong><span>Sähkövikojen mittaus ja selvitys</span></a>
+            <a href="auton-pienhuolto-laukaa.html"><strong>Auton pienhuolto Laukaa</strong><span>Huollot ilman nosturia</span></a>
+            <a href="autopalvelu-leppavesi.html"><strong>Autopalvelu Leppävesi</strong><span>Paikallinen diagnostiikka ja pienhuolto</span></a>
+          </div>
         </div>
       </div>
     </section>

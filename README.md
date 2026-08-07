@@ -1,27 +1,21 @@
-# Mikko Minkkinen – Autopalvelut
+# Mikko Minkkinen – Autopalvelut / SEO-versio
 
-Valmis staattinen verkkosivusto GitHub Pagesiin.
+Lataa kaikki tämän kansion tiedostot GitHub Pages -repositorion juureen.
 
-## Ennen julkaisua
+Mukana:
+- `index.html`
+- `style.css`
+- `script.js`
+- `favicon.svg`
+- `robots.txt`
+- `sitemap.xml`
+- `autodiagnostiikka-jyvaskyla.html`
+- `autosahko-jyvaskyla.html`
+- `auton-pienhuolto-laukaa.html`
+- `autopalvelu-leppavesi.html`
 
-1. Avaa `index.html` ja tarkista hinnat.
-2. Vaihda `robots.txt`- ja `sitemap.xml`-tiedostoihin oma domain.
-3. Tarvittaessa muuta palvelualue tai palveluiden rajaukset.
+Canonical- ja sitemap-osoitteissa käytetään nykyistä osoitetta `https://autosahkoapu.fi/`. Jos otat oman domainin käyttöön, vaihda tämä osoite kaikista HTML-tiedostoista sekä `robots.txt`- ja `sitemap.xml`-tiedostoista.
 
-Sivustolle on lisätty kevytyrittäjyys sekä yhteystiedot 050 556 1219 ja autosahkoapu@gmail.com.
-
-## Julkaisu GitHub Pagesissa
-
-1. Luo GitHubiin uusi julkinen repository, esimerkiksi `autopalvelut`.
-2. Lataa kaikki tämän kansion tiedostot repositoryn juureen.
-3. Avaa repositoryssa **Settings → Pages**.
-4. Valitse **Deploy from a branch**, branch `main` ja kansio `/root`.
-5. Tallenna. GitHub näyttää hetken kuluttua sivuston osoitteen.
-
-## Tiedostot
-
-- `index.html` – sivun sisältö ja SEO
-- `style.css` – ulkoasu ja mobiilinäkymä
-- `script.js` – valikko, animaatiot ja tarjouspyyntölomake
-- `favicon.svg` – välilehden kuvake
-- `robots.txt` ja `sitemap.xml` – hakukoneet
+Yhteystiedot:
+- 050 556 1219
+- autosahkoapu@gmail.com

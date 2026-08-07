@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://OMA-DOMAIN.FI/sitemap.xml
+Sitemap: https://autosahkoapu.fi/sitemap.xml

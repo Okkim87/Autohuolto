@@ -185,3 +185,21 @@ html,body{max-width:100%;overflow-x:clip}
     font-size:.9em;
   }
 }
+
+
+/* SEO-palvelusivut ja sisäiset linkit */
+.seo-link{display:inline-block;margin-top:12px;font-weight:800;color:var(--accent);text-decoration:none}
+.seo-link:hover{text-decoration:underline}
+.local-links{margin-top:28px;padding:28px;border:1px solid var(--line);border-radius:24px;background:rgba(255,255,255,.025)}
+.local-links h3{margin-top:0;font-size:1.4rem}
+.local-link-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:18px}
+.local-link-grid a{display:flex;flex-direction:column;gap:5px;padding:18px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.025);text-decoration:none;color:var(--text)}
+.local-link-grid a:hover{border-color:rgba(255,119,31,.55);transform:translateY(-1px)}
+.local-link-grid span{color:var(--muted);font-size:.92rem}
+.subpage-hero{padding-top:120px;padding-bottom:80px}
+.subpage-hero .hero-copy{max-width:880px}
+.subpage-hero h1{max-width:880px}
+.seo-service-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.page-call{white-space:nowrap}
+@media(max-width:760px){.local-link-grid,.seo-service-grid{grid-template-columns:1fr}.local-links{padding:18px}.page-call{font-size:.82rem;padding:10px 12px}.subpage-hero{padding-top:86px;padding-bottom:54px}}
+@media(max-width:420px){.page-call{display:none}}
