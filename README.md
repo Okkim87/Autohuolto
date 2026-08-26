@@ -1,21 +1,12 @@
-# Mikko Minkkinen – Autopalvelut / SEO-versio
+# Autosähköapu – HV-akun kuntotestaus
 
-Lataa kaikki tämän kansion tiedostot GitHub Pages -repositorion juureen.
+Yhden sivun verkkosivusto sähkö- ja hybridiautojen korkeajänniteakun tekniselle kuntotestauspalvelulle.
 
-Mukana:
-- `index.html`
-- `style.css`
-- `script.js`
-- `favicon.svg`
-- `robots.txt`
-- `sitemap.xml`
-- `autodiagnostiikka-jyvaskyla.html`
-- `autosahko-jyvaskyla.html`
-- `auton-pienhuolto-laukaa.html`
-- `autopalvelu-leppavesi.html`
+## Julkaisu GitHub Pagesissa
 
-Canonical- ja sitemap-osoitteissa käytetään nykyistä osoitetta `https://autosahkoapu.fi/`. Jos otat oman domainin käyttöön, vaihda tämä osoite kaikista HTML-tiedostoista sekä `robots.txt`- ja `sitemap.xml`-tiedostoista.
+1. Pura ZIP-tiedosto.
+2. Kopioi tiedostot GitHub-repositorion juureen.
+3. Korvaa vanhat tiedostot näillä.
+4. Varmista GitHub Pages -asetuksista, että julkaisu tapahtuu päähaaran juuresta.
 
-Yhteystiedot:
-- 050 556 1219
-- autosahkoapu@gmail.com
+Yhteydenottolomake muodostaa valmiin sähköpostiviestin osoitteeseen `autosahkoapu@gmail.com`.

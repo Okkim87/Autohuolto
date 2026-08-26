@@ -35,15 +35,17 @@ form?.addEventListener('submit', (event) => {
     status.textContent = 'Lisää oma sähköpostiosoite script.js-tiedoston CONTACT-kohtaan ennen julkaisua.';
     return;
   }
-  const subject = encodeURIComponent(`Tarjouspyyntö: ${data.get('car')} ${data.get('year') || ''}`.trim());
+  const subject = encodeURIComponent(`HV-akkutestin varaus: ${data.get('car')} ${data.get('year') || ''}`.trim());
   const body = encodeURIComponent([
     `Nimi: ${data.get('name')}`,
     `Puhelin: ${data.get('phone')}`,
     `Auto: ${data.get('car')}`,
     `Vuosimalli: ${data.get('year') || '-'}`,
-    `Rekisteritunnus / moottori: ${data.get('vehicle') || '-'}`,
+    `Käyttövoima: ${data.get('powertrain') || '-'}`,
+    `Akkukoko: ${data.get('battery') || '-'}`,
+    `Rekisteritunnus: ${data.get('vehicle') || '-'}`,
     '',
-    'Oire tai haluttu työ:',
+    'Testin syy tai havaitut oireet:',
     data.get('message')
   ].join('\n'));
   window.location.href = `mailto:${CONTACT.email}?subject=${subject}&body=${body}`;

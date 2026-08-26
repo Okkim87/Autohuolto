@@ -203,3 +203,7 @@ html,body{max-width:100%;overflow-x:clip}
 .page-call{white-space:nowrap}
 @media(max-width:760px){.local-link-grid,.seo-service-grid{grid-template-columns:1fr}.local-links{padding:18px}.page-call{font-size:.82rem;padding:10px 12px}.subpage-hero{padding-top:86px;padding-bottom:54px}}
 @media(max-width:420px){.page-call{display:none}}
+
+/* HV-testin lomakkeen valintakenttä */
+.contact-form select{width:100%;border:1px solid var(--line);background:#0d1117;color:#fff;border-radius:12px;padding:13px 14px;outline:none;font:inherit}
+.contact-form select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,122,26,.1)}
