@@ -14,7 +14,8 @@ mainNav?.querySelectorAll('a').forEach(link => link.addEventListener('click', ()
   menuButton?.setAttribute('aria-expanded', 'false');
 }));
 
-document.getElementById('year').textContent = new Date().getFullYear();
+const yearNode = document.getElementById('year');
+if (yearNode) yearNode.textContent = new Date().getFullYear();
 
 const observer = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
@@ -31,23 +32,18 @@ const status = document.getElementById('form-status');
 form?.addEventListener('submit', (event) => {
   event.preventDefault();
   const data = new FormData(form);
-  if (CONTACT.email.includes('ESIMERKKI')) {
-    status.textContent = 'Lisää oma sähköpostiosoite script.js-tiedoston CONTACT-kohtaan ennen julkaisua.';
-    return;
-  }
-  const subject = encodeURIComponent(`HV-akkutestin varaus: ${data.get('car')} ${data.get('year') || ''}`.trim());
+  const subject = encodeURIComponent(`Autopalvelu: ${data.get('car')} ${data.get('year') || ''}`.trim());
   const body = encodeURIComponent([
     `Nimi: ${data.get('name')}`,
     `Puhelin: ${data.get('phone')}`,
     `Auto: ${data.get('car')}`,
     `Vuosimalli: ${data.get('year') || '-'}`,
     `Käyttövoima: ${data.get('powertrain') || '-'}`,
-    `Akkukoko: ${data.get('battery') || '-'}`,
     `Rekisteritunnus: ${data.get('vehicle') || '-'}`,
     '',
-    'Testin syy tai havaitut oireet:',
+    'Vika, oire tai haluttu työ:',
     data.get('message')
   ].join('\n'));
   window.location.href = `mailto:${CONTACT.email}?subject=${subject}&body=${body}`;
-  status.textContent = `Sähköpostiohjelma avataan. Tarvittaessa soita: ${CONTACT.phone}`;
+  if (status) status.textContent = `Sähköpostiohjelma avataan. Tarvittaessa soita: ${CONTACT.phone}`;
 });
