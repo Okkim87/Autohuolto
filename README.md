@@ -133,3 +133,8 @@ AI valitsee seuraavan diagnostisen mittauksen lähdedatan, oireen, vikakoodien j
 Frontend ei sisällä OpenAI API -avainta. Avaimen pitää olla vain Cloudflare Workerissa secret-muuttujana.
 
 AI:n promptissa on myös pakotettu sääntö: tarkkoja ajoneuvokohtaisia pinnejä tai mittausarvoja ei saa keksiä, jos niitä ei ole varmennetussa lähdedatassa.
+
+## Chat-käyttöliittymä
+Diagnoosi toimii nyt yhtenä keskusteluikkunana sekä ilmaiseen kokeiluun että maksulliseen käyttöön. Auton tiedot avataan keskustelun yläreunan "Auton tiedot" -painikkeella. Viestikentästä voi lähettää oireita, vikakoodeja ja mittaustuloksia.
+
+Tuetut liitteet käyttöliittymässä: kuvat (PNG/JPEG/WebP), CSV, JSON, TXT ja LOG. Maksullisessa Worker-versiossa kuvat välitetään OpenAI-mallille ja tekstimuotoiset datatiedostot lisätään diagnoosikontekstiin. Ilmainen paikallinen kokeilu näyttää liitteet keskustelussa mutta ei analysoi niitä ilman backendia.
