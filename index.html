@@ -25,13 +25,48 @@
 <article class="price-card reveal"><small>PRO</small><h3>30 päivän käyttö</h3><div class="price">29,90 €</div><p>Mekaanikolle tai paljon diagnosoivalle.</p><ul><li>30 päivää aktivoinnista</li><li>300 AI-vaihetta</li><li>Tekninen mekaanikko-tila</li></ul><a class="button button-secondary pay-link" data-plan="month" href="#">Osta 30 päivää</a></article>
 </div><p class="payment-note">Maksu hoidetaan EezyPay-maksulinkillä. Maksun jälkeen saat aktivointikoodin palvelun käyttöön.</p></div></section>
 
-<section id="diagnoosi" class="section diagnosis-section"><div class="container"><div class="section-heading reveal"><p class="eyebrow">Diagnoosi</p><h2>Kerro mitä autossa tapahtuu</h2><p>Ilmainen kokeilu antaa yhden mittausohjeen suoraan selaimessa ilman kirjautumista. Aktivointikoodilla varsinainen AI-diagnoosi jatkuu mittaustulos kerrallaan.</p></div><div class="app-shell reveal">
-<form id="diagnosis-form" class="diagnosis-form"><div class="mode-picker" role="group" aria-label="Käyttäjätaso"><label><input type="radio" name="mode" value="consumer" checked><span><b>Kuluttaja</b><small>Helppo ja turvallinen</small></span></label><label><input type="radio" name="mode" value="hobby"><span><b>Harrastaja</b><small>Mittauksia mukaan</small></span></label><label><input type="radio" name="mode" value="pro"><span><b>Mekaanikko</b><small>Tekninen diagnoosi</small></span></label></div>
-<div class="form-grid"><label><span>Merkki ja malli</span><input id="car" name="car" type="text" placeholder="Esim. Ford Mondeo" required></label><label><span>VIN (valinnainen)</span><input id="vin" name="vin" type="text" maxlength="17" autocomplete="off" placeholder="17-merkkinen VIN"><small class="field-note">VIN auttaa tunnistamaan auton vPIC-datasta, jos malli kuuluu tietokantaan.</small></label><label><span>Vuosimalli</span><input name="year" type="number" min="1980" max="2035" placeholder="2010"></label><label><span>Moottori / käyttövoima</span><input name="engine" type="text" placeholder="Esim. 2.0 bensiini"></label><label><span>Vikakoodi(t)</span><input name="dtc" type="text" placeholder="Esim. P0171, P0302"></label><label class="full"><span>Oire</span><textarea name="symptom" rows="4" placeholder="Milloin vika ilmenee ja mitä auto tekee?" required></textarea></label><label class="full"><span>Jo tehdyt mittaukset / korjaukset</span><textarea name="done" rows="3" placeholder="Esim. MAF vaihdettu, STFT +22 % tyhjäkäynnillä"></textarea></label></div>
-<fieldset class="tool-fieldset"><legend>Käytettävissä olevat työkalut</legend><div class="tool-grid"><label><input type="checkbox" name="tools" value="obd" checked><span>OBD / testeri</span></label><label><input type="checkbox" name="tools" value="multimeter"><span>Yleismittari</span></label><label><input type="checkbox" name="tools" value="scope"><span>Oskilloskooppi</span></label><label><input type="checkbox" name="tools" value="clamp"><span>Virtapihti</span></label><label><input type="checkbox" name="tools" value="pressure"><span>Paine- / alipainemittari</span></label><label><input type="checkbox" name="tools" value="smoke"><span>Savukone</span></label></div></fieldset>
-<div class="activation-box"><label><span>Aktivointikoodi <small>(ei pakollinen ilmaiseen kokeiluun)</small></span><div class="activation-row"><input id="access-code" type="text" autocomplete="off" placeholder="Esim. ASAI-XXXX-XXXX"><button id="activate-code" class="button button-ghost" type="button">Aktivoi</button></div></label><p id="access-status" class="access-status">Yksi ilmainen AI-vastaus käytettävissä.</p></div>
-<button class="button button-primary diagnosis-submit" type="submit">Anna seuraava mittaus <span>→</span></button><p class="form-note">Älä tee korkeajännite-, turvalaite-, polttoaine- tai muita vaarallisia mittauksia ilman asianmukaista osaamista ja välineitä.</p></form>
-<section id="result-panel" class="result-panel" aria-live="polite" hidden><div class="result-head"><div><p class="eyebrow">Diagnoosipolku</p><h3>Seuraava mittaus</h3></div><button id="new-diagnosis" class="icon-button" type="button">Uusi</button></div><div id="source-strip" class="source-strip" hidden></div><div id="result-content"></div><div id="continue-box" class="continue-box" hidden><label><span>Syötä mittaustulos</span><textarea id="measurement-result" rows="3" placeholder="Esim. Lyhytaikainen korjaus +24 % tyhjäkäynnillä ja +6 % 2500 rpm"></textarea></label><button id="continue-diagnosis" class="button button-primary" type="button">Jatka tuloksen perusteella →</button></div><div id="paywall-box" class="paywall-box" hidden><strong>Ilmainen mittausohje on käytetty.</strong><p>Jatka mittaustulos kerrallaan aktivointikoodilla. Maksullinen AI käyttää mittaustuloksiasi seuraavan testin valintaan.</p><a class="button button-primary" href="#hinnat">Valitse käyttöpaketti</a></div><div class="result-actions"><button id="copy-result" class="button button-secondary" type="button">Kopioi tulos</button></div><p id="copy-status" class="copy-status"></p></section>
+<section id="diagnoosi" class="section diagnosis-section"><div class="container"><div class="section-heading reveal"><p class="eyebrow">Diagnoosi</p><h2>Keskustele auton viasta</h2><p>Kuvaile oire omin sanoin. Lisää tarvittaessa vikakoodit, mittaustulokset, kuvat tai OBD-data. Autosähköapu AI ohjaa tutkimista yksi järkevä mittaus kerrallaan.</p></div>
+<div class="chat-app reveal">
+  <div class="chat-toolbar">
+    <div class="mode-picker chat-mode" role="group" aria-label="Käyttäjätaso">
+      <label><input type="radio" name="mode" value="consumer" checked><span><b>Kuluttaja</b><small>Selkokieli</small></span></label>
+      <label><input type="radio" name="mode" value="hobby"><span><b>Harrastaja</b><small>Teknisempi</small></span></label>
+      <label><input type="radio" name="mode" value="pro"><span><b>Mekaanikko</b><small>Ammattitaso</small></span></label>
+    </div>
+    <button id="toggle-context" class="button button-ghost compact-button" type="button">Auton tiedot</button>
+  </div>
+
+  <div id="vehicle-context" class="vehicle-context" hidden>
+    <div class="context-grid">
+      <label><span>Merkki ja malli</span><input id="car" type="text" placeholder="Esim. Ford Mondeo"></label>
+      <label><span>Vuosimalli</span><input id="car-year" type="number" min="1980" max="2035" placeholder="2010"></label>
+      <label><span>Moottori / käyttövoima</span><input id="engine" type="text" placeholder="Esim. 2.0 bensiini"></label>
+      <label><span>VIN <small>(valinnainen)</small></span><input id="vin" type="text" maxlength="17" placeholder="17-merkkinen VIN"></label>
+      <label class="context-wide"><span>Vikakoodit</span><input id="dtc" type="text" placeholder="Esim. P0171, P0302"></label>
+    </div>
+    <fieldset class="tool-fieldset compact-tools"><legend>Käytettävissä olevat työkalut</legend><div class="tool-grid">
+      <label><input type="checkbox" name="tools" value="obd" checked><span>OBD / testeri</span></label><label><input type="checkbox" name="tools" value="multimeter"><span>Yleismittari</span></label><label><input type="checkbox" name="tools" value="scope"><span>Oskilloskooppi</span></label><label><input type="checkbox" name="tools" value="clamp"><span>Virtapihti</span></label><label><input type="checkbox" name="tools" value="pressure"><span>Paine- / alipainemittari</span></label><label><input type="checkbox" name="tools" value="smoke"><span>Savukone</span></label>
+    </div></fieldset>
+  </div>
+
+  <div class="chat-access">
+    <div><strong id="access-title">Ilmainen kokeilu</strong><small id="access-status">Yksi ilmainen mittausohje käytettävissä.</small></div>
+    <div class="chat-access-code"><input id="access-code" type="text" autocomplete="off" placeholder="Aktivointikoodi"><button id="activate-code" class="button button-ghost compact-button" type="button">Aktivoi</button></div>
+  </div>
+
+  <div id="chat-messages" class="chat-messages" aria-live="polite">
+    <article class="chat-row assistant-row"><div class="chat-avatar">A+</div><div class="chat-bubble assistant-bubble"><strong>Autosähköapu AI</strong><p>Kerro mikä autossa on vikana tai mitä olet jo mitannut. Voin auttaa valitsemaan seuraavan mittauksen.</p><p class="chat-hint">Esim. “Ford Mondeo 2010 2.0 bensa. Kylmänä kierrokset seilaavat, lämpimänä toimii. Ei vikakoodeja.”</p></div></article>
+  </div>
+
+  <div id="attachment-preview" class="attachment-preview" hidden></div>
+  <div class="chat-composer">
+    <input id="chat-files" type="file" accept="image/*,.csv,.txt,.json,.log" multiple hidden>
+    <button id="attach-button" class="composer-icon" type="button" aria-label="Lisää kuva tai tiedosto" title="Lisää kuva tai data">＋</button>
+    <textarea id="chat-input" rows="1" placeholder="Kirjoita oire, vikakoodi tai mittaustulos…"></textarea>
+    <button id="send-message" class="composer-send" type="button" aria-label="Lähetä">➜</button>
+  </div>
+  <div class="composer-meta"><span>Kuvat · CSV · JSON · TXT</span><span>Enter lähettää · Shift+Enter rivinvaihto</span></div>
+  <p class="form-note chat-safety">Älä tee korkeajännite-, turvalaite-, polttoaine- tai muita vaarallisia mittauksia ilman asianmukaista osaamista ja välineitä.</p>
 </div></div></section>
 
 <section class="section principle-section"><div class="container principle-grid"><div class="reveal"><p class="eyebrow">Turvallinen periaate</p><h2>Mittaa → päätä → mittaa → varmista → korjaa</h2><p>Vikakoodi kertoo usein vain missä järjestelmässä poikkeama havaittiin. AI:n tehtävä on auttaa valitsemaan mittaus, joka erottaa vaihtoehdot toisistaan.</p></div><div class="principle-card reveal"><div class="bad-path"><small>EI NÄIN</small><strong>P0101 → vaihda MAF</strong></div><div class="path-arrow">↓</div><div class="good-path"><small>VAAN NÄIN</small><strong>P0101 → livedata → syöttö → maa → signaali → ilmavirtaus → varmista</strong></div></div></div></section>
