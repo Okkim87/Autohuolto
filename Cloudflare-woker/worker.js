@@ -56,16 +56,35 @@ async function lookup(request, env, headers){
 async function diagnose(request, env, headers){
   try {
     const body=await request.json(); const code=cleanCode(body.code); const rec=await getRecord(env,code);
-    const caseData=body.caseData||{}; const history=Array.isArray(body.history)?body.history.slice(-12):[]; const measurementResult=String(body.measurementResult||'').slice(0,3000);
+    const caseData=body.caseData||{};
+    const history=Array.isArray(body.history)?body.history.slice(-18):[];
+    const userMessage=String(body.userMessage||body.measurementResult||'').slice(0,5000);
+    const attachments=normalizeAttachments(body.attachments);
     const technicalContext = await getTechnicalContext(caseData, env);
-    const prompt=buildPrompt(caseData,history,measurementResult,technicalContext);
-    const response=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{'Authorization':`Bearer ${env.OPENAI_API_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({model:env.OPENAI_MODEL||'gpt-5.6-luna',reasoning:{effort:'low'},max_output_tokens:900,input:[{role:'system',content:[{type:'input_text',text:SYSTEM_PROMPT}]},{role:'user',content:[{type:'input_text',text:prompt}]}]})});
+    const prompt=buildPrompt(caseData,history,userMessage,technicalContext,attachments);
+    const userContent=[{type:'input_text',text:prompt}];
+    for(const a of attachments){
+      if(a.kind==='image' && a.dataUrl) userContent.push({type:'input_image',image_url:a.dataUrl});
+    }
+    const response=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{'Authorization':`Bearer ${env.OPENAI_API_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({model:env.OPENAI_MODEL||'gpt-5.6-luna',reasoning:{effort:'low'},max_output_tokens:900,input:[{role:'system',content:[{type:'input_text',text:SYSTEM_PROMPT}]},{role:'user',content:userContent}]})});
     const raw=await response.json(); if(!response.ok) { console.error('OpenAI error',raw); throw new Error('AI-palvelu ei vastannut.'); }
     const text=extractText(raw); const reply=parseReply(text);
     rec.credits=Math.max(0,(rec.credits||0)-1); rec.used=(rec.used||0)+1; rec.lastUsedAt=Date.now(); await env.ACCESS_CODES.put(`code:${code}`,JSON.stringify(rec));
-    const nextHistory=[...history,{measurementResult,reply}].slice(-12);
+    const compactFiles=attachments.map(a=>({name:a.name,kind:a.kind}));
+    const nextHistory=[...history,{role:'user',text:userMessage,attachments:compactFiles},{role:'assistant',reply}].slice(-18);
     return json({reply,history:nextHistory,access:{credits:rec.credits,remainingText:remainingText(rec)},sources:sourceSummary(technicalContext)},200,headers);
   } catch(e) { if(e instanceof UserError) return json({error:e.message},402,headers); console.error(e); return json({error:'AI-diagnoosi epäonnistui. Yritä uudelleen.'},500,headers); }
+}
+
+function normalizeAttachments(raw){
+  if(!Array.isArray(raw)) return [];
+  const out=[];
+  for(const x of raw.slice(0,6)){
+    const name=String(x?.name||'liite').slice(0,120);
+    if(x?.kind==='image' && typeof x.dataUrl==='string' && /^data:image\/(png|jpeg|jpg|webp);base64,/i.test(x.dataUrl) && x.dataUrl.length<6_000_000){out.push({name,kind:'image',dataUrl:x.dataUrl});continue;}
+    if(x?.kind==='text' && typeof x.text==='string'){out.push({name,kind:'text',text:x.text.slice(0,80000)});}
+  }
+  return out;
 }
 
 async function getTechnicalContext(c, env){
@@ -170,11 +189,39 @@ Säännöt:
 - Perustele lyhyesti miksi juuri tämä mittaus tehdään.
 - Älä väitä diagnoosia varmaksi ilman sitä tukevaa mittaustulosta.`;
 
-function buildPrompt(c,h,measurement,ctx){
-  const past=h.map((x,i)=>`Vaihe ${i+1}: mittaustulos=${x.measurementResult||'(aloitus)'}; AI=${JSON.stringify(x.reply)}`).join('\n');
+function buildPrompt(c,h,userMessage,ctx,attachments=[]){
+  const past=h.map((x,i)=>{
+    if(x?.role==='user') return `Käyttäjä: ${String(x.text||'').slice(0,1800)}`;
+    if(x?.role==='assistant') return `AI: ${JSON.stringify(x.reply||{}).slice(0,2500)}`;
+    return `Vaihe ${i+1}: ${JSON.stringify(x).slice(0,2200)}`;
+  }).join('\n');
   const vehicle = ctx?.vehicle ? JSON.stringify(ctx.vehicle) : 'VIN-lähdedataa ei ole.';
   const dtcs = ctx?.dtcs?.length ? JSON.stringify(ctx.dtcs) : 'Autodiag2-lähdedataa ei ole tälle pyynnölle.';
-  return `Käyttäjätaso: ${c.mode||'consumer'}\nAuto käyttäjän mukaan: ${c.car||'-'}\nVIN: ${cleanVin(c.vin)||'-'}\nVuosimalli: ${c.year||'-'}\nMoottori/käyttövoima: ${c.engine||'-'}\nVikakoodit: ${c.dtc||'-'}\nOire: ${c.symptom||'-'}\nJo tehdyt mittaukset/korjaukset: ${c.done||'-'}\nTyökalut: ${(c.tools||[]).join(', ')||'ei ilmoitettu'}\n\nVARMENNETTU ULKOINEN DATA:\nVIN / NHTSA vPIC: ${vehicle}\nDTC / Autodiag2: ${dtcs}\n\nAiemmat vaiheet:\n${past||'Ei aiempia AI-vaiheita.'}\n\nUusin mittaustulos: ${measurement||'Ei vielä mittaustulosta. Valitse ensimmäinen paras mittaus.'}\n\nAnna vain seuraava järkevä mittaus JSON-muodossa.`;
+  const textFiles=attachments.filter(a=>a.kind==='text').map(a=>`TIEDOSTO ${a.name}:\n${a.text}`).join('\n\n').slice(0,120000);
+  const imageNames=attachments.filter(a=>a.kind==='image').map(a=>a.name).join(', ');
+  return `Käyttäjätaso: ${c.mode||'consumer'}
+Auto käyttäjän mukaan: ${c.car||'-'}
+VIN: ${cleanVin(c.vin)||'-'}
+Vuosimalli: ${c.year||'-'}
+Moottori/käyttövoima: ${c.engine||'-'}
+Vikakoodit auton tiedoissa: ${c.dtc||'-'}
+Työkalut: ${(c.tools||[]).join(', ')||'ei ilmoitettu'}
+
+VARMENNETTU ULKOINEN DATA:
+VIN / NHTSA vPIC: ${vehicle}
+DTC / Autodiag2: ${dtcs}
+
+AIEMPI KESKUSTELU:
+${past||'Ei aiempaa keskustelua.'}
+
+KÄYTTÄJÄN UUSIN VIESTI:
+${userMessage||'(ei tekstiä, tarkista liitteet)'}
+
+LIITTEET:
+Kuvat: ${imageNames||'ei kuvia'}
+${textFiles||'Ei tekstimuotoista dataa.'}
+
+Jos kuvassa tai datatiedostossa on mittaustulos, käytä sitä vain siltä osin kuin pystyt lukemaan sen luotettavasti. Älä keksi puuttuvia arvoja. Anna yksi seuraava järkevä mittaus JSON-muodossa.`;
 }
 
 async function createCode(request, env, headers){
