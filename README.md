@@ -138,3 +138,16 @@ AI:n promptissa on myös pakotettu sääntö: tarkkoja ajoneuvokohtaisia pinnej�
 Diagnoosi toimii nyt yhtenä keskusteluikkunana sekä ilmaiseen kokeiluun että maksulliseen käyttöön. Auton tiedot avataan keskustelun yläreunan "Auton tiedot" -painikkeella. Viestikentästä voi lähettää oireita, vikakoodeja ja mittaustuloksia.
 
 Tuetut liitteet käyttöliittymässä: kuvat (PNG/JPEG/WebP), CSV, JSON, TXT ja LOG. Maksullisessa Worker-versiossa kuvat välitetään OpenAI-mallille ja tekstimuotoiset datatiedostot lisätään diagnoosikontekstiin. Ilmainen paikallinen kokeilu näyttää liitteet keskustelussa mutta ei analysoi niitä ilman backendia.
+
+
+## HV-rajaus
+Korkeajännitejärjestelmien mittaus-, korjaus-, purku- ja testausohjeet on estetty kaikilta käyttäjätasoilta. HV-kysymyksissä palvelu ohjaa käyttäjän suoraan osoitteeseen autosahkoapu@gmail.com. Tekstinä tunnistettu HV-kysymys ei kuluta maksullisen paketin AI-vaihetta.
+
+## Uudet ilmaiset datalähteet
+
+Workerissa on nyt lisäksi:
+- **OBDex**: geneeristen DTC-koodien syyt/oireet + tapaukseen relevantit Mode 01 OBD-PIDit (live-haku, CC0).
+- **OBDb**: yrittää hakea merkki/malli-kohtaisen signal set -datan suoraan OBDb-reposta (live-haku, CC-BY-SA-4.0). HV-signaalit suodatetaan pois.
+- **Wal33D**: valinnainen valmistajakohtainen DTC-tietokanta. Muunnin: `Cloudflare-woker/wal33d_to_d1.py`.
+
+OBDex ja OBDb eivät vaadi omaa API-avainta tai maksullista tilausta. Katso `DATA_SOURCES.md` lisensseistä ja rajoista.
