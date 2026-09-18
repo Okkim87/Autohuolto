@@ -18,3 +18,10 @@ id = "VAIHDA_KV_NAMESPACE_ID"
 binding = "AUTODIAG_DB"
 database_name = "autosahkoapu-autodiag"
 database_id = "VAIHDA_D1_DATABASE_ID"
+
+# Valinnainen toinen D1 Wal33D:n valmistajakohtaisille DTC-koodeille.
+# Worker toimii ilman tätäkin OBDex + OBDb + Autodiag2 -lähteillä.
+# [[d1_databases]]
+# binding = "OPEN_DTC_DB"
+# database_name = "autosahkoapu-open-dtc"
+# database_id = "VAIHDA_TOISEN_D1_TIETOKANNAN_ID"
