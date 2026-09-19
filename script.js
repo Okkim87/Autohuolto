@@ -1,79 +1,706 @@
+
 const cfg = window.ASAI_CONFIG || {};
-const toolNames = {obd:'OBD / testeri',multimeter:'yleismittari',scope:'oskilloskooppi',clamp:'virtapihti',pressure:'paine-/alipainemittari',smoke:'savukone'};
-let activeAccess=null, history=[], attachments=[], conversationStarted=false;
 
-const $=id=>document.getElementById(id);
-const messages=$('chat-messages'), input=$('chat-input'), fileInput=$('chat-files'), preview=$('attachment-preview');
-const accessCode=$('access-code'), accessStatus=$('access-status'), accessTitle=$('access-title');
+const toolNames = {
+  obd: 'OBD / testeri',
+  multimeter: 'yleismittari',
+  scope: 'oskilloskooppi',
+  clamp: 'virtapihti',
+  pressure: 'paine-/alipainemittari',
+  smoke: 'savukone'
+};
 
-const menuButton=document.querySelector('.menu-button'),mainNav=document.querySelector('.main-nav');
-menuButton?.addEventListener('click',()=>{const open=mainNav.classList.toggle('open');menuButton.setAttribute('aria-expanded',String(open));});
-mainNav?.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{mainNav.classList.remove('open');menuButton?.setAttribute('aria-expanded','false');}));
-$('year').textContent=new Date().getFullYear();
-const observer=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');observer.unobserve(e.target);}}),{threshold:.08});document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
+let activeAccess = null;
+let history = [];
+let attachments = [];
+let conversationStarted = false;
 
-function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
-function workerReady(){return cfg.workerUrl && !cfg.workerUrl.includes('VAIHDA-TAMA');}
-function normalizeCode(v){return String(v||'').trim().toUpperCase();}
-function freeUsed(){return localStorage.getItem('asai_free_used')==='1';}
-function selectedMode(){return document.querySelector('input[name="mode"]:checked')?.value||'consumer';}
-function selectedTools(){return [...document.querySelectorAll('input[name="tools"]:checked')].map(x=>x.value);}
-function setAccess(text,state=''){accessStatus.textContent=text;accessStatus.className=''+(state?state:'');}
-function caseData(){return {mode:selectedMode(),car:$('car').value.trim(),year:$('car-year').value.trim(),engine:$('engine').value.trim(),vin:$('vin').value.trim().toUpperCase(),dtc:$('dtc').value.trim(),tools:selectedTools()};}
+const $ = id => document.getElementById(id);
 
-function isHighVoltageTopic(c,text=''){
-  const hay=[c?.car,c?.engine,c?.dtc,text].filter(Boolean).join(' ').toLowerCase();
-  return /(hv|high[- ]?voltage|korkeajänn|ajoakku|traction battery|hybridiakku|hybrid battery|service disconnect|huoltoerotin|interlock|precharge|esilataus|kontaktori|contactor|invertteri|inverter|on[- ]?board charger|obc|dc[-/]?dc|oranssi(?:t|a)? kaapeli|eristysvika|isolation fault|p0aa[0-9a-f]|p1a[0-9a-f]{2})/i.test(hay);
-}
-function hvRedirectReply(){return {blocked:true,test:'Korkeajännitejärjestelmä',how:'Autosähköapu AI ei anna korkeajännitejärjestelmän mittaus-, korjaus- tai purkuohjeita. Ota tässä asiassa suoraan yhteyttä minuun: autosahkoapu@gmail.com',caution:'Älä koske korkeajännitejärjestelmään, oransseihin HV-kaapeleihin tai HV-komponentteihin tämän verkkopalvelun ohjeiden perusteella.'};}
+const messages = $('chat-messages');
+const input = $('chat-input');
+const fileInput = $('chat-files');
+const preview = $('attachment-preview');
 
-// Payment links
-document.querySelectorAll('.pay-link').forEach(a=>{const plan=a.dataset.plan,url=cfg.paymentLinks?.[plan];if(url&&!url.includes('VAIHDA-EEZYPAY')){a.href=url;a.target='_blank';a.rel='noopener';}else a.addEventListener('click',e=>{e.preventDefault();alert('EezyPay-maksulinkki lisätään config.js-tiedostoon.');});});
+const accessCode = $('access-code');
+const accessStatus = $('access-status');
+const accessTitle = $('access-title');
 
-async function api(path,body){if(!workerReady()) throw new Error('AI-palvelinta ei ole vielä otettu käyttöön.');const r=await fetch(cfg.workerUrl.replace(/\/$/,'')+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});let data={};try{data=await r.json();}catch{}if(!r.ok)throw new Error(data.error||'Palvelinvirhe');return data;}
-async function activate(){const code=normalizeCode(accessCode.value);if(!code)return;setAccess('Tarkistetaan koodia…');try{const x=await api('/activate',{code});activeAccess={code,...x};localStorage.setItem('asai_access_code',code);accessTitle.textContent=x.label||'Maksullinen käyttö';setAccess(x.remainingText||'Aktivoitu','ok');addSystem(`Käyttö aktivoitu: ${x.label}. ${x.remainingText||''}`);}catch(e){activeAccess=null;localStorage.removeItem('asai_access_code');setAccess(e.message,'bad');}}
-$('activate-code').addEventListener('click',activate);accessCode.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();activate();}});
-const saved=localStorage.getItem('asai_access_code');if(saved){accessCode.value=saved;if(workerReady())activate();}else if(freeUsed()){setAccess('Ilmainen mittausohje on jo käytetty tällä selaimella.');}
+const menuButton = document.querySelector('.menu-button');
+const mainNav = document.querySelector('.main-nav');
 
-$('toggle-context').addEventListener('click',()=>{const box=$('vehicle-context');box.hidden=!box.hidden;$('toggle-context').textContent=box.hidden?'Auton tiedot':'Piilota tiedot';});
-$('attach-button').addEventListener('click',()=>fileInput.click());
-fileInput.addEventListener('change',async()=>{for(const f of [...fileInput.files]){try{attachments.push(await readAttachment(f));}catch(e){addSystem(e.message,'error');}}fileInput.value='';renderAttachments();});
+menuButton?.addEventListener('click', () => {
+  const open = mainNav.classList.toggle('open');
+  menuButton.setAttribute('aria-expanded', String(open));
+});
 
-async function readAttachment(file){
-  const image=file.type.startsWith('image/');
-  if(image && file.size>4*1024*1024)throw new Error(`${file.name}: kuva on liian suuri (max 4 Mt).`);
-  if(!image && file.size>1024*1024)throw new Error(`${file.name}: tiedosto on liian suuri (max 1 Mt).`);
-  if(image){const dataUrl=await asDataUrl(file);return {name:file.name,type:file.type,kind:'image',dataUrl};}
-  const text=(await file.text()).slice(0,80000);return {name:file.name,type:file.type||'text/plain',kind:'text',text};
-}
-function asDataUrl(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file);});}
-function renderAttachments(){if(!attachments.length){preview.hidden=true;preview.innerHTML='';return;}preview.hidden=false;preview.innerHTML=attachments.map((a,i)=>`<div class="attachment-chip">${a.kind==='image'?'🖼️':'📄'} <span>${esc(a.name)}</span><button type="button" data-remove="${i}" aria-label="Poista">×</button></div>`).join('');preview.querySelectorAll('[data-remove]').forEach(b=>b.addEventListener('click',()=>{attachments.splice(Number(b.dataset.remove),1);renderAttachments();}));}
+mainNav?.querySelectorAll('a').forEach(a => {
+  a.addEventListener('click', () => {
+    mainNav.classList.remove('open');
+    menuButton?.setAttribute('aria-expanded', 'false');
+  });
+});
 
-input.addEventListener('input',()=>{input.style.height='auto';input.style.height=Math.min(input.scrollHeight,150)+'px';});
-input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});$('send-message').addEventListener('click',send);
+$('year').textContent = new Date().getFullYear();
 
-function addUser(text,files=[]){const fileHtml=files.length?`<div class="bubble-files">${files.map(a=>`<span>${a.kind==='image'?'🖼️':'📄'} ${esc(a.name)}</span>`).join('')}</div>`:'';messages.insertAdjacentHTML('beforeend',`<article class="chat-row user-row"><div class="chat-bubble user-bubble">${text?`<p>${esc(text).replace(/\n/g,'<br>')}</p>`:''}${fileHtml}</div></article>`);scrollChat();}
-function addSystem(text,type=''){messages.insertAdjacentHTML('beforeend',`<div class="chat-system ${type}">${esc(text)}</div>`);scrollChat();}
-function addTyping(){const id='typing-'+Date.now();messages.insertAdjacentHTML('beforeend',`<article id="${id}" class="chat-row assistant-row"><div class="chat-avatar">A+</div><div class="chat-bubble assistant-bubble"><div class="typing"><i></i><i></i><i></i></div></div></article>`);scrollChat();return id;}
-function addAssistant(r,sources=[]){const sourceHtml=sources.length?`<div class="bubble-sources">${sources.map(x=>`<span>${esc(x.name||'Data')}: ${esc(x.provider||'')} ${esc(x.detail||'')}</span>`).join('')}</div>`:'';if(r?.blocked){const html=`<article class="chat-row assistant-row"><div class="chat-avatar">A+</div><div class="chat-bubble assistant-bubble diagnostic-message"><strong>Turvallisuusrajaus</strong><h4>${esc(r.test||'Korkeajännitejärjestelmä')}</h4><p>${esc(r.how||'Autosähköapu AI ei anna korkeajännitejärjestelmän työohjeita.')}</p><p><a class="button button-primary" href="mailto:autosahkoapu@gmail.com">Ota suoraan yhteyttä</a></p>${r.caution?`<p class="caution">${esc(r.caution)}</p>`:''}</div></article>`;messages.insertAdjacentHTML('beforeend',html);scrollChat();return;}const html=`<article class="chat-row assistant-row"><div class="chat-avatar">A+</div><div class="chat-bubble assistant-bubble diagnostic-message"><strong>Seuraava mittaus</strong><h4>${esc(r.test||'Seuraava testi')}</h4>${r.how?`<p>${esc(r.how)}</p>`:''}<div class="measure-grid">${r.tool?`<div><small>MITTALAITE</small><span>${esc(r.tool)}</span></div>`:''}${r.expected?`<div><small>MITÄ ODOTETAAN</small><span>${esc(r.expected)}</span></div>`:''}</div>${r.ifNormal||r.ok?`<p class="branch ok"><b>Jos tulos on normaali:</b> ${esc(r.ifNormal||r.ok)}</p>`:''}${r.ifAbnormal||r.bad?`<p class="branch bad"><b>Jos tulos poikkeaa:</b> ${esc(r.ifAbnormal||r.bad)}</p>`:''}${r.reason?`<details><summary>Miksi tämä mitataan?</summary><p>${esc(r.reason)}</p></details>`:''}${r.caution?`<p class="caution">${esc(r.caution)}</p>`:''}${sourceHtml}</div></article>`;messages.insertAdjacentHTML('beforeend',html);scrollChat();}
-function addPaywall(){messages.insertAdjacentHTML('beforeend',`<article class="chat-row assistant-row"><div class="chat-avatar">A+</div><div class="chat-bubble assistant-bubble paywall-chat"><strong>Ilmainen kokeilu on käytetty.</strong><p>Voit jatkaa samaa diagnoosia aktivointikoodilla. Mittaustulokset ja keskustelu pysyvät tässä ketjussa.</p><a class="button button-primary" href="#hinnat">Valitse käyttöpaketti</a></div></article>`);scrollChat();}
-function scrollChat(){requestAnimationFrame(()=>{messages.scrollTop=messages.scrollHeight;});}
+const observer = new IntersectionObserver(
+  es => es.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  }),
+  { threshold: 0.08 }
+);
 
-function localFreePlan(c,text){const dtc=((c.dtc||'')+' '+text).toUpperCase(),s=text.toLowerCase(),has=t=>c.tools.includes(t),consumer=c.mode==='consumer';
-  if(/P0171|P0174/.test(dtc)||/laiha|seos/.test(s))return has('obd')?{test:consumer?'Vertaa polttoaineen seoskorjauksia kahdella kierrosluvulla':'Vertaa STFT/LTFT-arvoja tyhjäkäynnillä ja noin 2500 rpm',tool:'OBD / testeri',how:consumer?'Lämmitä moottori normaalilämpöiseksi. Avaa OBD-sovelluksesta “polttoaineen lyhytaikainen korjaus (STFT)” ja “pitkäaikainen korjaus (LTFT)”. Kirjaa prosentit tyhjäkäynnillä ja noin 2500 rpm:llä.':'Kirjaa STFT ja LTFT tyhjäkäynnillä ja tasaisella noin 2500 rpm:llä.',expected:consumer?'Plusmerkkinen arvo kertoo, että moottorinohjaus lisää polttoainetta. Olennaista on verrata, muuttuuko korjaus kierrosten mukana.':'Vertaa korjauksia käyttötilanteiden välillä.',ifNormal:'Lähetä molemmat arvot seuraavaa vaihetta varten.',ifAbnormal:'Älä vaihda osia vielä. Poikkeaman suunta kertoo, mihin mittauspolkua jatketaan.',reason:'Kierroslukujen vertailu auttaa erottamaan mahdollisen imuvuodon muista laihan seoksen syistä.'}:{test:'Lue vikakoodit ja vian hetkellä tallennetut tiedot',tool:'OBD-lukija',how:'Lue koodit ennen nollausta ja tallenna freeze frame, jos laite näyttää sen.',expected:'Tavoite on nähdä missä tilanteessa vika havaittiin.',ifNormal:'Lähetä tiedot jatkoa varten.',ifAbnormal:'Jos OBD-yhteyttä ei synny, tarkista 12 V järjestelmän perusedellytykset.',reason:'Vikakoodi yksin ei kerro juurisyytä.'};
-  if(/P0101/.test(dtc)||/maf|ilmamäär/.test(s))return {test:consumer?'Tarkista ilmamäärämittarin (MAF) arvo OBD-sovelluksesta':'Tarkista MAF-livedatan loogisuus',tool:has('obd')?'OBD / testeri':'Silmämääräinen perustarkastus',how:has('obd')?(consumer?'Etsi livedatasta MAF / Mass Air Flow / ilmamäärä. Katso arvo tyhjäkäynnillä ja noin 2500 rpm:llä ja lähetä molemmat lukemat.':'Seuraa MAF-arvoa tyhjäkäynnillä ja noin 2500 rpm:llä.'): 'Tarkista ilmanottoletkut, liittimet ja näkyvät vuodot.',expected:consumer?'Ilmamäärän pitäisi kasvaa selvästi ja tasaisesti kierrosten noustessa. Tarkkaa oikeaa arvoa ei päätellä ilman ajoneuvokohtaista lähdedataa.':'Arvon pitäisi muuttua loogisesti kuorman ja kierrosluvun mukana.',ifNormal:'Seuraavaksi voidaan verrata seoskorjauksia ja etsiä mahdollista ilmavuotoa.',ifAbnormal:'Älä vaihda MAF-anturia vielä. Syöttö, maadoitus, liitin, signaali ja ilmavuodot pitää rajata ensin.',reason:consumer?'P0101 tarkoittaa, että moottorinohjaus pitää ilmamäärätietoa epäuskottavana. Se ei tarkoita automaattisesti rikkinäistä ilmamäärämittaria.':'P0101 on plausibility-koodi, ei komponenttituomio.'};
-  if(/P0087/.test(dtc)||/polttoaine.*paine|rail/.test(s))return {test:consumer?'Vertaa pyydettyä ja toteutunutta polttoainepainetta':'Compare requested vs actual fuel pressure',tool:'OBD / testeri',how:consumer?'Etsi livedatasta polttoainepaineen pyydetty/tavoitearvo ja toteutunut arvo. Kirjaa ne tyhjäkäynnillä ja oireen aikana. Älä avaa polttoainejärjestelmää.':'Log requested/actual fuel pressure at idle and during fault event.',expected:'Toteutuneen paineen pitäisi seurata pyydettyä arvoa riittävän johdonmukaisesti.',ifNormal:'Paineentuotto ei tämän havainnon perusteella ole ensimmäinen epäilty. Jatka anturi-/ohjauspuolen rajaukseen.',ifAbnormal:'Älä tuomitse korkeapainepumppua. Matalapainepuoli, syöttö ja säätö pitää rajata ennen osien vaihtoa.',reason:'P0087 kertoo liian matalaksi havaitusta polttoainepaineesta, ei suoraan viallisesta pumpusta.',caution:'Älä avaa korkeapaineista polttoainejärjestelmää ilman koulutusta ja oikeita työmenetelmiä.'};
-  if(/U[0-9A-F]{4}/.test(dtc)||/can|väyl|kommunik|yhteys.*ohjain/.test(s))return {test:consumer?'Tee koko auton vikakoodiluku ja kirjaa mihin ohjainlaitteisiin testeri saa yhteyden':'Tee full vehicle scan ja kirjaa reachable/unreachable-moduulit',tool:'OBD / testeri',how:consumer?'Lue koko auto testerillä. Kirjaa kaikki U-alkuiset yhteysvikakoodit sekä ne järjestelmät, joihin testeri ei saa yhteyttä.':'Run full scan; record communication DTCs and unreachable modules.',expected:consumer?'Tieto siitä, mitkä ohjainlaitteet vastaavat ja mitkä eivät, auttaa päättelemään onko vika yhdessä laitteessa vai auton yhteisessä tietoliikenneverkossa.':'Module availability helps localize network segment/common supply faults.',ifNormal:'Lähetä lista seuraavaa mittausta varten.',ifAbnormal:'Jos yhteys ei onnistu koko autoon, aloita 12 V jännitteestä ja diagnostiikkaliitännän perusedellytyksistä.',reason:consumer?'Auton ohjainlaitteet keskustelevat keskenään tietoliikenneverkon kautta. Ennen johtojen mittaamista kannattaa selvittää, ketkä verkon laitteista ovat vielä tavoitettavissa.':'Topology can often be narrowed from module reachability before bus measurements.'};
-  if(/P0560|P0561|P0562|P0563/.test(dtc)||/akku|lataus|jännite/.test(s))return {test:consumer?'Mittaa 12 voltin akun jännite auton ollessa sammutettuna ja käynnissä':'Mittaa 12 V järjestelmän lepo- ja käyntijännite',tool:'Yleismittari',how:'Aseta yleismittari tasajännitteelle (V DC). Mittaa suoraan akun plus- ja miinusnavasta ensin auto sammutettuna ja sitten käynnissä. Kirjaa molemmat lukemat.',expected:consumer?'Käyntijännitteen pitäisi käyttäytyä auton latausjärjestelmälle loogisesti. Älylataavissa autoissa jännite ei ole koko ajan sama, joten yhtä tarkkaa tavoitelukua ei käytetä ilman ajoneuvokohtaista tietoa.':'Arvojen pitää olla järjestelmän strategiaan nähden loogiset; smart charging voi vaihdella.',ifNormal:'Lähetä molemmat jännitteet ja kerro, palaako akku-/latausvalo.',ifAbnormal:'Seuraava vaihe on rajata akun, latauksen, kaapelien ja jännitehäviöiden osuus.',reason:'Monet sähköiset vikakoodit voivat syntyä liian matalasta tai epävakaasta 12 V jännitteestä.'};
-  return {test:consumer?'Lue vikakoodit ja kuvaile tarkasti milloin vika tapahtuu':'Lue DTC:t, freeze frame ja vian esiintymisolosuhteet',tool:has('obd')?'OBD / testeri':'Perustarkastus',how:has('obd')?'Lue kaikki vikakoodit ennen niiden nollaamista. Jos testerissä näkyy freeze frame / pysäytyskuva, tallenna se.':'Kirjaa milloin oire alkaa: kylmänä vai lämpimänä, tyhjäkäynnillä vai ajossa, ja mitä varoitusvaloja näkyy.',expected:'Tarkoitus on kerätä riittävästi havaintoja ensimmäisen oikean mittauksen valintaan.',ifNormal:'Lähetä tiedot jatkoa varten.',ifAbnormal:'Jos auto ylikuumenee, haisee voimakkaasti polttoaineelle tai turvallisuus vaarantuu, keskeytä ajo.',reason:'Järjestelmällinen vianhaku alkaa toistettavista havainnoista eikä osien arvaamisesta.'};
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+function esc(s = '') {
+  return String(s).replace(/[&<>"']/g, m => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  }[m]));
 }
 
-async function send(){const text=input.value.trim();if(!text&&!attachments.length)return;const files=attachments.splice(0);renderAttachments();addUser(text,files);input.value='';input.style.height='auto';conversationStarted=true;
-  const currentCase=caseData();
-  if(isHighVoltageTopic(currentCase,text)){addAssistant(hvRedirectReply());history.push({role:'user',text},{role:'assistant',reply:hvRedirectReply()});return;}
-  if(!activeAccess){
-    if(freeUsed()){addPaywall();return;}
-    const reply=localFreePlan(caseData(),text);localStorage.setItem('asai_free_used','1');setAccess('Ilmainen mittausohje käytetty. Aktivointikoodilla voit jatkaa samassa keskustelussa.');addAssistant(reply);history.push({role:'user',text},{role:'assistant',reply});if(files.length)addSystem('Liitteet näkyvät keskustelussa, mutta ilmainen selainversio ei vielä analysoi niiden sisältöä. Maksullinen AI voi käsitellä tuettuja liitteitä.');return;
+function workerReady() {
+  return cfg.workerUrl && !cfg.workerUrl.includes('VAIHDA-TAMA');
+}
+
+function normalizeCode(v) {
+  return String(v || '').trim().toUpperCase();
+}
+
+function freeUsed() {
+  return localStorage.getItem('asai_free_used') === '1';
+}
+
+function selectedMode() {
+  return document.querySelector('input[name="mode"]:checked')?.value || 'consumer';
+}
+
+function selectedTools() {
+  return [...document.querySelectorAll('input[name="tools"]:checked')]
+    .map(x => x.value);
+}
+
+function setAccess(text, state = '') {
+  accessStatus.textContent = text;
+  accessStatus.className = '' + (state ? state : '');
+}
+
+function caseData() {
+  return {
+    mode: selectedMode(),
+    car: $('car').value.trim(),
+    year: $('car-year').value.trim(),
+    engine: $('engine').value.trim(),
+    vin: $('vin').value.trim().toUpperCase(),
+    dtc: $('dtc').value.trim(),
+    tools: selectedTools()
+  };
+}
+
+function isHighVoltageTopic(c, text = '') {
+  const hay = [
+    c?.car,
+    c?.engine,
+    c?.dtc,
+    text
+  ].filter(Boolean).join(' ').toLowerCase();
+
+  return /(?:\bhv\b|high[- ]?voltage|korkeajänn|ajoakku|traction battery|hybridiakku|hybrid battery|service disconnect|huoltoerotin|interlock|precharge|esilataus|kontaktori|contactor|invertteri|inverter|on[- ]?board charger|\bobc\b|dc[-/]?dc|oranssi(?:t|a)? kaapeli|eristysvika|isolation fault|\bp0aa[0-9a-f]\b|\bp1a[0-9a-f]{2}\b)/i.test(hay);
+}
+
+function hvRedirectReply() {
+  return {
+    blocked: true,
+    test: 'Korkeajännitejärjestelmä',
+    how: 'Autosähköapu AI ei anna korkeajännitejärjestelmän mittaus-, korjaus- tai purkuohjeita. Ota tässä asiassa suoraan yhteyttä minuun: autosahkoapu@gmail.com',
+    caution: 'Korkeajännitejärjestelmiin liittyvät mittaukset ja korjaukset vaativat asianmukaisen koulutuksen ja turvalliset työmenetelmät.'
+  };
+}
+
+// Maksulinkit
+document.querySelectorAll('.pay-link').forEach(a => {
+  const plan = a.dataset.plan;
+  const url = cfg.paymentLinks?.[plan];
+
+  if (url && !url.includes('VAIHDA-EEZYPAY')) {
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener';
+  } else {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      alert('EezyPay-maksulinkki lisätään config.js-tiedostoon.');
+    });
   }
-  const typing=addTyping();try{const r=await api('/diagnose',{code:activeAccess.code,caseData:caseData(),history,userMessage:text,attachments:files});$(typing)?.remove();history=r.history||history;addAssistant(r.reply,r.sources||[]);if(r.access){activeAccess={...activeAccess,...r.access};setAccess(r.access.remainingText||'Aktivoitu','ok');}}catch(e){$(typing)?.remove();addSystem(e.message,'error');}
+});
+
+async function api(path, body) {
+  if (!workerReady()) {
+    throw new Error('AI-palvelinta ei ole vielä otettu käyttöön.');
+  }
+
+  const r = await fetch(
+    cfg.workerUrl.replace(/\/$/, '') + path,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    }
+  );
+
+  let data = {};
+
+  try {
+    data = await r.json();
+  } catch {}
+
+  if (!r.ok) {
+    throw new Error(data.error || 'Palvelinvirhe');
+  }
+
+  return data;
+}
+
+async function activate() {
+  const code = normalizeCode(accessCode.value);
+  if (!code) return;
+
+  setAccess('Tarkistetaan koodia…');
+
+  try {
+    const x = await api('/activate', { code });
+
+    activeAccess = { code, ...x };
+    localStorage.setItem('asai_access_code', code);
+
+    accessTitle.textContent = x.label || 'Maksullinen käyttö';
+    setAccess(x.remainingText || 'Aktivoitu', 'ok');
+
+    addSystem(
+      `Käyttö aktivoitu: ${x.label}. ${x.remainingText || ''}`
+    );
+  } catch (e) {
+    activeAccess = null;
+    localStorage.removeItem('asai_access_code');
+    setAccess(e.message, 'bad');
+  }
+}
+
+$('activate-code').addEventListener('click', activate);
+
+accessCode.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    activate();
+  }
+});
+
+const saved = localStorage.getItem('asai_access_code');
+
+if (saved) {
+  accessCode.value = saved;
+  if (workerReady()) activate();
+} else if (freeUsed()) {
+  setAccess('Ilmainen mittausohje on jo käytetty tällä selaimella.');
+}
+
+$('toggle-context').addEventListener('click', () => {
+  const box = $('vehicle-context');
+
+  box.hidden = !box.hidden;
+
+  $('toggle-context').textContent = box.hidden
+    ? 'Auton tiedot'
+    : 'Piilota tiedot';
+});
+
+$('attach-button').addEventListener('click', () => fileInput.click());
+
+fileInput.addEventListener('change', async () => {
+  for (const f of [...fileInput.files]) {
+    try {
+      attachments.push(await readAttachment(f));
+    } catch (e) {
+      addSystem(e.message, 'error');
+    }
+  }
+
+  fileInput.value = '';
+  renderAttachments();
+});
+
+async function readAttachment(file) {
+  const image = file.type.startsWith('image/');
+
+  if (image && file.size > 4 * 1024 * 1024) {
+    throw new Error(`${file.name}: kuva on liian suuri (max 4 Mt).`);
+  }
+
+  if (!image && file.size > 1024 * 1024) {
+    throw new Error(`${file.name}: tiedosto on liian suuri (max 1 Mt).`);
+  }
+
+  if (image) {
+    const dataUrl = await asDataUrl(file);
+
+    return {
+      name: file.name,
+      type: file.type,
+      kind: 'image',
+      dataUrl
+    };
+  }
+
+  const text = (await file.text()).slice(0, 80000);
+
+  return {
+    name: file.name,
+    type: file.type || 'text/plain',
+    kind: 'text',
+    text
+  };
+}
+
+function asDataUrl(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+
+    r.onload = () => res(r.result);
+    r.onerror = rej;
+
+    r.readAsDataURL(file);
+  });
+}
+
+function renderAttachments() {
+  if (!attachments.length) {
+    preview.hidden = true;
+    preview.innerHTML = '';
+    return;
+  }
+
+  preview.hidden = false;
+
+  preview.innerHTML = attachments.map((a, i) => `
+    <div class="attachment-chip">
+      ${a.kind === 'image' ? '🖼️' : '📄'}
+      <span>${esc(a.name)}</span>
+      <button type="button" data-remove="${i}" aria-label="Poista">×</button>
+    </div>
+  `).join('');
+
+  preview.querySelectorAll('[data-remove]').forEach(b => {
+    b.addEventListener('click', () => {
+      attachments.splice(Number(b.dataset.remove), 1);
+      renderAttachments();
+    });
+  });
+}
+
+input.addEventListener('input', () => {
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 150) + 'px';
+});
+
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    send();
+  }
+});
+
+$('send-message').addEventListener('click', send);
+
+function addUser(text, files = []) {
+  const fileHtml = files.length
+    ? `<div class="bubble-files">${files.map(a => `
+        <span>${a.kind === 'image' ? '🖼️' : '📄'} ${esc(a.name)}</span>
+      `).join('')}</div>`
+    : '';
+
+  messages.insertAdjacentHTML(
+    'beforeend',
+    `<article class="chat-row user-row">
+      <div class="chat-bubble user-bubble">
+        ${text ? `<p>${esc(text).replace(/\n/g, '<br>')}</p>` : ''}
+        ${fileHtml}
+      </div>
+    </article>`
+  );
+
+  scrollChat();
+}
+
+function addSystem(text, type = '') {
+  messages.insertAdjacentHTML(
+    'beforeend',
+    `<div class="chat-system ${type}">${esc(text)}</div>`
+  );
+
+  scrollChat();
+}
+
+function addTyping() {
+  const id = 'typing-' + Date.now();
+
+  messages.insertAdjacentHTML(
+    'beforeend',
+    `<article id="${id}" class="chat-row assistant-row">
+      <div class="chat-avatar">A+</div>
+      <div class="chat-bubble assistant-bubble">
+        <div class="typing"><i></i><i></i><i></i></div>
+      </div>
+    </article>`
+  );
+
+  scrollChat();
+  return id;
+}
+
+// Päivitetty vastauskortti:
+// - perustelu näkyy aina
+// - varoitus on erillinen "Huomioitavaa"-osio
+function addAssistant(r, sources = []) {
+  const sourceHtml = sources.length
+    ? `<div class="bubble-sources">${sources.map(x =>
+        `<span>${esc(x.name || 'Data')}: ${esc(x.provider || '')} ${esc(x.detail || '')}</span>`
+      ).join('')}</div>`
+    : '';
+
+  if (r?.blocked) {
+    const html = `
+      <article class="chat-row assistant-row">
+        <div class="chat-avatar">A+</div>
+        <div class="chat-bubble assistant-bubble diagnostic-message">
+          <strong>Turvallisuusrajaus</strong>
+          <h4>${esc(r.test || 'Korkeajännitejärjestelmä')}</h4>
+          <p>${esc(r.how || 'Ota korkeajännitejärjestelmää koskevissa asioissa suoraan yhteyttä.')}</p>
+          <p>
+            <a class="button button-primary" href="mailto:autosahkoapu@gmail.com">
+              Ota suoraan yhteyttä
+            </a>
+          </p>
+          ${r.caution
+            ? `<div class="caution">
+                <strong>Turvallisuushuomio</strong>
+                <p>${esc(r.caution)}</p>
+              </div>`
+            : ''}
+        </div>
+      </article>`;
+
+    messages.insertAdjacentHTML('beforeend', html);
+    scrollChat();
+    return;
+  }
+
+  const reason = String(r?.reason || '').trim();
+  const caution = String(r?.caution || '').trim();
+
+  const html = `
+    <article class="chat-row assistant-row">
+      <div class="chat-avatar">A+</div>
+      <div class="chat-bubble assistant-bubble diagnostic-message">
+        <strong>Seuraava mittaus</strong>
+        <h4>${esc(r?.test || 'Seuraava testi')}</h4>
+
+        ${r?.how ? `<p>${esc(r.how)}</p>` : ''}
+
+        <div class="measure-grid">
+          ${r?.tool
+            ? `<div>
+                <small>MITTALAITE</small>
+                <span>${esc(r.tool)}</span>
+              </div>`
+            : ''}
+
+          ${r?.expected
+            ? `<div>
+                <small>MITÄ ODOTETAAN</small>
+                <span>${esc(r.expected)}</span>
+              </div>`
+            : ''}
+        </div>
+
+        ${r?.ifNormal || r?.ok
+          ? `<p class="branch ok">
+              <b>Jos tulos on normaali:</b> ${esc(r.ifNormal || r.ok)}
+            </p>`
+          : ''}
+
+        ${r?.ifAbnormal || r?.bad
+          ? `<p class="branch bad">
+              <b>Jos tulos poikkeaa:</b> ${esc(r.ifAbnormal || r.bad)}
+            </p>`
+          : ''}
+
+        <div class="diagnostic-reason">
+          <strong>Miksi tämä mitataan?</strong>
+          <p>${esc(
+            reason ||
+            'Tämä mittaus auttaa rajaamaan mahdollisia vikasyitä ja valitsemaan seuraavan tutkimusvaiheen.'
+          )}</p>
+        </div>
+
+        ${caution
+          ? `<div class="caution">
+              <strong>Huomioitavaa</strong>
+              <p>${esc(caution)}</p>
+            </div>`
+          : ''}
+
+        ${sourceHtml}
+      </div>
+    </article>`;
+
+  messages.insertAdjacentHTML('beforeend', html);
+  scrollChat();
+}
+
+function addPaywall() {
+  messages.insertAdjacentHTML(
+    'beforeend',
+    `<article class="chat-row assistant-row">
+      <div class="chat-avatar">A+</div>
+      <div class="chat-bubble assistant-bubble paywall-chat">
+        <strong>Ilmainen kokeilu on käytetty.</strong>
+        <p>
+          Voit jatkaa samaa diagnoosia aktivointikoodilla.
+          Mittaustulokset ja keskustelu pysyvät tässä ketjussa.
+        </p>
+        <a class="button button-primary" href="#hinnat">
+          Valitse käyttöpaketti
+        </a>
+      </div>
+    </article>`
+  );
+
+  scrollChat();
+}
+
+function scrollChat() {
+  requestAnimationFrame(() => {
+    messages.scrollTop = messages.scrollHeight;
+  });
+}
+
+function localFreePlan(c, text) {
+  const dtc = ((c.dtc || '') + ' ' + text).toUpperCase();
+  const s = text.toLowerCase();
+  const has = t => c.tools.includes(t);
+  const consumer = c.mode === 'consumer';
+
+  if (/P0171|P0174/.test(dtc) || /laiha|seos/.test(s)) {
+    return has('obd')
+      ? {
+          test: consumer
+            ? 'Vertaa polttoaineen seoskorjauksia kahdella kierrosluvulla'
+            : 'Vertaa STFT/LTFT-arvoja tyhjäkäynnillä ja noin 2500 rpm',
+          tool: 'OBD / testeri',
+          how: consumer
+            ? 'Lämmitä moottori normaalilämpöiseksi. Avaa OBD-sovelluksesta “polttoaineen lyhytaikainen korjaus (STFT)” ja “pitkäaikainen korjaus (LTFT)”. Kirjaa prosentit tyhjäkäynnillä ja noin 2500 rpm:llä.'
+            : 'Kirjaa STFT ja LTFT tyhjäkäynnillä ja tasaisella noin 2500 rpm:llä.',
+          expected: consumer
+            ? 'Plusmerkkinen arvo kertoo, että moottorinohjaus lisää polttoainetta. Olennaista on verrata, muuttuuko korjaus kierrosten mukana.'
+            : 'Vertaa korjauksia käyttötilanteiden välillä.',
+          ifNormal: 'Lähetä molemmat arvot seuraavaa vaihetta varten.',
+          ifAbnormal: 'Älä vaihda osia vielä. Poikkeaman suunta kertoo, mihin mittauspolkua jatketaan.',
+          reason: 'Kierroslukujen vertailu auttaa erottamaan mahdollisen imuvuodon muista laihan seoksen syistä.'
+        }
+      : {
+          test: 'Lue vikakoodit ja vian hetkellä tallennetut tiedot',
+          tool: 'OBD-lukija',
+          how: 'Lue koodit ennen nollausta ja tallenna freeze frame, jos laite näyttää sen.',
+          expected: 'Tavoite on nähdä missä tilanteessa vika havaittiin.',
+          ifNormal: 'Lähetä tiedot jatkoa varten.',
+          ifAbnormal: 'Jos OBD-yhteyttä ei synny, tarkista 12 V järjestelmän perusedellytykset.',
+          reason: 'Vikakoodi yksin ei kerro juurisyytä.'
+        };
+  }
+
+  if (/P0101/.test(dtc) || /maf|ilmamäär/.test(s)) {
+    return {
+      test: consumer
+        ? 'Tarkista ilmamäärämittarin (MAF) arvo OBD-sovelluksesta'
+        : 'Tarkista MAF-livedatan loogisuus',
+      tool: has('obd') ? 'OBD / testeri' : 'Silmämääräinen perustarkastus',
+      how: has('obd')
+        ? (
+            consumer
+              ? 'Etsi livedatasta MAF / Mass Air Flow / ilmamäärä. Katso arvo tyhjäkäynnillä ja noin 2500 rpm:llä ja lähetä molemmat lukemat.'
+              : 'Seuraa MAF-arvoa tyhjäkäynnillä ja noin 2500 rpm:llä.'
+          )
+        : 'Tarkista ilmanottoletkut, liittimet ja näkyvät vuodot.',
+      expected: consumer
+        ? 'Ilmamäärän pitäisi kasvaa selvästi ja tasaisesti kierrosten noustessa. Tarkkaa oikeaa arvoa ei päätellä ilman ajoneuvokohtaista lähdedataa.'
+        : 'Arvon pitäisi muuttua loogisesti kuorman ja kierrosluvun mukana.',
+      ifNormal: 'Seuraavaksi voidaan verrata seoskorjauksia ja etsiä mahdollista ilmavuotoa.',
+      ifAbnormal: 'Älä vaihda MAF-anturia vielä. Syöttö, maadoitus, liitin, signaali ja ilmavuodot pitää rajata ensin.',
+      reason: consumer
+        ? 'P0101 tarkoittaa, että moottorinohjaus pitää ilmamäärätietoa epäuskottavana. Se ei tarkoita automaattisesti rikkinäistä ilmamäärämittaria.'
+        : 'P0101 on plausibility-koodi, ei komponenttituomio.'
+    };
+  }
+
+  if (/P0087/.test(dtc) || /polttoaine.*paine|rail/.test(s)) {
+    return {
+      test: consumer
+        ? 'Vertaa pyydettyä ja toteutunutta polttoainepainetta'
+        : 'Compare requested vs actual fuel pressure',
+      tool: 'OBD / testeri',
+      how: consumer
+        ? 'Etsi livedatasta polttoainepaineen pyydetty/tavoitearvo ja toteutunut arvo. Kirjaa ne tyhjäkäynnillä ja oireen aikana. Älä avaa polttoainejärjestelmää.'
+        : 'Log requested/actual fuel pressure at idle and during fault event.',
+      expected: 'Toteutuneen paineen pitäisi seurata pyydettyä arvoa riittävän johdonmukaisesti.',
+      ifNormal: 'Paineentuotto ei tämän havainnon perusteella ole ensimmäinen epäilty. Jatka anturi-/ohjauspuolen rajaukseen.',
+      ifAbnormal: 'Älä tuomitse korkeapainepumppua. Matalapainepuoli, syöttö ja säätö pitää rajata ennen osien vaihtoa.',
+      reason: 'P0087 kertoo liian matalaksi havaitusta polttoainepaineesta, ei suoraan viallisesta pumpusta.',
+      caution: 'Älä avaa korkeapaineista polttoainejärjestelmää ilman koulutusta ja oikeita työmenetelmiä.'
+    };
+  }
+
+  if (/U[0-9A-F]{4}/.test(dtc) || /can|väyl|kommunik|yhteys.*ohjain/.test(s)) {
+    return {
+      test: consumer
+        ? 'Tee koko auton vikakoodiluku ja kirjaa mihin ohjainlaitteisiin testeri saa yhteyden'
+        : 'Tee full vehicle scan ja kirjaa reachable/unreachable-moduulit',
+      tool: 'OBD / testeri',
+      how: consumer
+        ? 'Lue koko auto testerillä. Kirjaa kaikki U-alkuiset yhteysvikakoodit sekä ne järjestelmät, joihin testeri ei saa yhteyttä.'
+        : 'Run full scan; record communication DTCs and unreachable modules.',
+      expected: consumer
+        ? 'Tieto siitä, mitkä ohjainlaitteet vastaavat ja mitkä eivät, auttaa päättelemään onko vika yhdessä laitteessa vai auton yhteisessä tietoliikenneverkossa.'
+        : 'Module availability helps localize network segment/common supply faults.',
+      ifNormal: 'Lähetä lista seuraavaa mittausta varten.',
+      ifAbnormal: 'Jos yhteys ei onnistu koko autoon, aloita 12 V jännitteestä ja diagnostiikkaliitännän perusedellytyksistä.',
+      reason: consumer
+        ? 'Auton ohjainlaitteet keskustelevat keskenään tietoliikenneverkon kautta. Ennen johtojen mittaamista kannattaa selvittää, ketkä verkon laitteista ovat vielä tavoitettavissa.'
+        : 'Topology can often be narrowed from module reachability before bus measurements.'
+    };
+  }
+
+  if (
+    /P0560|P0561|P0562|P0563/.test(dtc) ||
+    /akku|lataus|jännite/.test(s)
+  ) {
+    return {
+      test: consumer
+        ? 'Mittaa 12 voltin akun jännite auton ollessa sammutettuna ja käynnissä'
+        : 'Mittaa 12 V järjestelmän lepo- ja käyntijännite',
+      tool: 'Yleismittari',
+      how: 'Aseta yleismittari tasajännitteelle (V DC). Mittaa suoraan akun plus- ja miinusnavasta ensin auto sammutettuna ja sitten käynnissä. Kirjaa molemmat lukemat.',
+      expected: consumer
+        ? 'Käyntijännitteen pitäisi käyttäytyä auton latausjärjestelmälle loogisesti. Älylataavissa autoissa jännite ei ole koko ajan sama, joten yhtä tarkkaa tavoitelukua ei käytetä ilman ajoneuvokohtaista tietoa.'
+        : 'Arvojen pitää olla järjestelmän strategiaan nähden loogiset; smart charging voi vaihdella.',
+      ifNormal: 'Lähetä molemmat jännitteet ja kerro, palaako akku-/latausvalo.',
+      ifAbnormal: 'Seuraava vaihe on rajata akun, latauksen, kaapelien ja jännitehäviöiden osuus.',
+      reason: 'Monet sähköiset vikakoodit voivat syntyä liian matalasta tai epävakaasta 12 V jännitteestä.'
+    };
+  }
+
+  return {
+    test: consumer
+      ? 'Lue vikakoodit ja kuvaile tarkasti milloin vika tapahtuu'
+      : 'Lue DTC:t, freeze frame ja vian esiintymisolosuhteet',
+    tool: has('obd') ? 'OBD / testeri' : 'Perustarkastus',
+    how: has('obd')
+      ? 'Lue kaikki vikakoodit ennen niiden nollaamista. Jos testerissä näkyy freeze frame / pysäytyskuva, tallenna se.'
+      : 'Kirjaa milloin oire alkaa: kylmänä vai lämpimänä, tyhjäkäynnillä vai ajossa, ja mitä varoitusvaloja näkyy.',
+    expected: 'Tarkoitus on kerätä riittävästi havaintoja ensimmäisen oikean mittauksen valintaan.',
+    ifNormal: 'Lähetä tiedot jatkoa varten.',
+    ifAbnormal: 'Jos auto ylikuumenee, haisee voimakkaasti polttoaineelle tai turvallisuus vaarantuu, keskeytä ajo.',
+    reason: 'Järjestelmällinen vianhaku alkaa toistettavista havainnoista eikä osien arvaamisesta.'
+  };
+}
+
+async function send() {
+  const text = input.value.trim();
+
+  if (!text && !attachments.length) return;
+
+  const files = attachments.splice(0);
+  renderAttachments();
+
+  addUser(text, files);
+
+  input.value = '';
+  input.style.height = 'auto';
+  conversationStarted = true;
+
+  const currentCase = caseData();
+
+  if (isHighVoltageTopic(currentCase, text)) {
+    const reply = hvRedirectReply();
+
+    addAssistant(reply);
+
+    history.push(
+      { role: 'user', text },
+      { role: 'assistant', reply }
+    );
+
+    return;
+  }
+
+  if (!activeAccess) {
+    if (freeUsed()) {
+      addPaywall();
+      return;
+    }
+
+    const reply = localFreePlan(currentCase, text);
+
+    localStorage.setItem('asai_free_used', '1');
+    setAccess(
+      'Ilmainen mittausohje käytetty. Aktivointikoodilla voit jatkaa samassa keskustelussa.'
+    );
+
+    addAssistant(reply);
+
+    history.push(
+      { role: 'user', text },
+      { role: 'assistant', reply }
+    );
+
+    if (files.length) {
+      addSystem(
+        'Liitteet näkyvät keskustelussa, mutta ilmainen selainversio ei vielä analysoi niiden sisältöä. Maksullinen AI voi käsitellä tuettuja liitteitä.'
+      );
+    }
+
+    return;
+  }
+
+  const typing = addTyping();
+
+  try {
+    const r = await api('/diagnose', {
+      code: activeAccess.code,
+      caseData: currentCase,
+      history,
+      userMessage: text,
+      attachments: files
+    });
+
+    $(typing)?.remove();
+
+    history = r.history || history;
+    addAssistant(r.reply, r.sources || []);
+
+    if (r.access) {
+      activeAccess = { ...activeAccess, ...r.access };
+      setAccess(r.access.remainingText || 'Aktivoitu', 'ok');
+    }
+  } catch (e) {
+    $(typing)?.remove();
+    addSystem(e.message, 'error');
+  }
 }
