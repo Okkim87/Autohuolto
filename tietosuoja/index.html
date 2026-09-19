@@ -1,1 +1,184 @@
-<!doctype html><html lang="fi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tietosuojaseloste | Autosähköapu AI</title><meta name="robots" content="index,follow"><link rel="canonical" href="https://autosahkoapu.fi/tietosuoja/"><style>body{font:17px/1.65 system-ui,sans-serif;background:#090e16;color:#edf4fb;margin:0}header,footer{background:#111e2e;padding:20px}nav,main,footer p{max-width:860px;margin:auto}nav a{color:#8bd4ff;margin-right:16px}main{max-width:860px;margin:auto;padding:28px 20px 70px}a{color:#8bd4ff}h1,h2{line-height:1.3}h2{margin-top:30px}.notice{padding:14px;background:#352b13;border:1px solid #e4b356;border-radius:8px}li{margin:9px 0}</style></head><body><header><nav><a href="/">Etusivu</a><a href="/kayttoehdot/">Käyttöehdot</a><a href="/tietosuoja/">Tietosuoja</a><a href="/peruuttaminen/">Peruuttaminen</a></nav></header><main><h1>Tietosuojaseloste</h1><p>Päivitetty 19.9.2026</p><h2>Rekisterinpitäjä ja yhteys</h2><p>Autosähköapu AI:n kehittäjä ja yhteyshenkilö on Mikko Minkkinen, kevytyrittäjä. Laskutan Eezy-palvelun kautta EezyPay-maksulinkeillä. Tietosuoja-asiat: <a href="mailto:autosahkoapu@gmail.com">autosahkoapu@gmail.com</a>.</p><p class="notice">Ennen maksullista julkaisua on vahvistettava ja ilmoitettava rekisterinpitäjän oikea juridinen nimi ja osoite, EezyPayn ja Eezyn tietosuojaroolit, mahdolliset EU/ETA-alueen ulkopuoliset siirrot suojatoimineen sekä lopulliset säilytysajat. Tätä tietoa ei voi päätellä yksin kevytyrittäjyydestä.</p><h2>Käsiteltävät tiedot ja tarkoitus</h2><p>Palvelussa käsitellään käyttäjän itse syöttämiä auton tietoja, oireita, vikakoodeja, mittaustuloksia, viestejä ja mahdollisia liitteitä diagnoosivastauksen tuottamiseksi. Aktivointikoodia, sen käyttömääriä sekä aktivointia ja voimassaoloa koskevia tietoja käsitellään käyttöoikeuden toteuttamiseksi. Asiakkaan sähköpostia sekä maksun ja koodin toimituksen tietoja käsitellään ostoksen toteuttamiseksi, asiakaspalvelua ja lakisääteisten velvoitteiden hoitamista varten. Älä syötä tarpeettomia henkilötietoja tai muiden henkilöiden tietoja viestikenttään tai liitteisiin.</p><h2>Palveluntarjoajat ja tallennus</h2><p>Verkkosivu sijaitsee GitHub Pagesissa. Cloudflare Worker välittää maksullisen diagnoosipyynnön ja Cloudflare KV ylläpitää aktivointikoodien käyttöoikeustietoja. Vastauksen tuottamisessa käytetään OpenAI:n rajapintaa. Maksun käsittely ja sen yhteydessä annetut tiedot hoidetaan EezyPay-maksupalvelussa; sen oma tietosuojaseloste löytyy maksusivulta. Selaimessa säilytetään paikallisesti aktivointikoodi ja ilmaisen kokeilun käytön tila. Sivustolla on ollut Google Analytics -koodi; sen käyttö ja suostumuksenhallinta pitää tarkistaa erikseen.</p><h2>Oikeusperusteet ja säilytys</h2><p>Diagnoosin ja käyttöoikeuden toteuttamiseen tarvittavia tietoja käsitellään sopimuksen täyttämiseksi. Lakisääteisten kirjanpito- ja muiden velvoitteiden edellyttämiä tietoja käsitellään lain noudattamiseksi. Mahdollinen ei-välttämätön analytiikka edellyttää soveltuvaa suostumusta. Tietoja säilytetään vain tarpeellisen ajan kunkin käsittelytarkoituksen ja lain edellyttämällä tavalla. Täsmälliset säilytysajat sekä palveluntarjoajien käytännöt on vielä vahvistettava ennen maksullista julkaisua.</p><h2>Oikeutesi</h2><p>Voit pyytää pääsyä henkilötietoihisi, oikaisua, poistoa, käsittelyn rajoitusta ja soveltuvissa tilanteissa tietojen siirtoa tai vastustaa käsittelyä. Voit peruuttaa mahdollisen suostumuksesi. Lähetä pyyntö osoitteeseen <a href="mailto:autosahkoapu@gmail.com">autosahkoapu@gmail.com</a>. Voit tehdä kantelun tietosuojavaltuutetulle: <a href="https://tietosuoja.fi/">tietosuoja.fi</a>.</p></main><footer><nav><a href="/">Etusivu</a><a href="/kayttoehdot/">Käyttöehdot</a><a href="/tietosuoja/">Tietosuoja</a><a href="/peruuttaminen/">Peruuttaminen</a></nav><p>Autosähköapu AI · autosahkoapu@gmail.com</p></footer></body></html>
+
+<!doctype html>
+<html lang="fi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Tietosuojaseloste | Autosähköapu AI</title>
+  <meta name="robots" content="index,follow">
+  <link rel="canonical" href="https://autosahkoapu.fi/tietosuoja/">
+
+  <style>
+    body {
+      font: 17px/1.65 system-ui, sans-serif;
+      background: #090e16;
+      color: #edf4fb;
+      margin: 0;
+    }
+
+    header,
+    footer {
+      background: #111e2e;
+      padding: 20px;
+    }
+
+    nav,
+    main,
+    footer p {
+      max-width: 860px;
+      margin: auto;
+    }
+
+    nav a {
+      color: #8bd4ff;
+      margin-right: 16px;
+    }
+
+    main {
+      max-width: 860px;
+      margin: auto;
+      padding: 28px 20px 70px;
+    }
+
+    a {
+      color: #8bd4ff;
+    }
+
+    h1,
+    h2 {
+      line-height: 1.3;
+    }
+
+    h2 {
+      margin-top: 30px;
+    }
+
+    li {
+      margin: 9px 0;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <nav>
+    <a href="/">Etusivu</a>
+    <a href="/kayttoehdot/">Käyttöehdot</a>
+    <a href="/tietosuoja/">Tietosuoja</a>
+    <a href="/peruuttaminen/">Peruuttaminen</a>
+  </nav>
+</header>
+
+<main>
+
+  <h1>Tietosuojaseloste</h1>
+
+  <p>Päivitetty 19.9.2026</p>
+
+  <h2>Rekisterinpitäjä ja yhteys</h2>
+
+  <p>
+    Autosähköapu AI:n kehittäjä ja yhteyshenkilö on Mikko Minkkinen,
+    kevytyrittäjä. Laskutan Eezy-palvelun kautta EezyPay-maksulinkeillä.
+    Tietosuoja-asiat:
+    <a href="mailto:autosahkoapu@gmail.com">
+      autosahkoapu@gmail.com
+    </a>.
+  </p>
+
+  <h2>Käsiteltävät tiedot ja tarkoitus</h2>
+
+  <p>
+    Palvelussa käsitellään käyttäjän itse syöttämiä auton tietoja,
+    oireita, vikakoodeja, mittaustuloksia, viestejä ja mahdollisia
+    liitteitä diagnoosivastauksen tuottamiseksi.
+    Aktivointikoodia, sen käyttömääriä sekä aktivointia ja voimassaoloa
+    koskevia tietoja käsitellään käyttöoikeuden toteuttamiseksi.
+    Asiakkaan sähköpostia sekä maksun ja koodin toimituksen tietoja
+    käsitellään ostoksen toteuttamiseksi, asiakaspalvelua ja
+    lakisääteisten velvoitteiden hoitamista varten.
+  </p>
+
+  <p>
+    Älä syötä tarpeettomia henkilötietoja tai muiden henkilöiden
+    tietoja viestikenttään tai liitteisiin.
+  </p>
+
+  <h2>Palveluntarjoajat ja tallennus</h2>
+
+  <p>
+    Verkkosivu sijaitsee GitHub Pagesissa.
+    Cloudflare Worker välittää maksullisen diagnoosipyynnön ja
+    Cloudflare KV ylläpitää aktivointikoodien käyttöoikeustietoja.
+    Vastauksen tuottamisessa käytetään OpenAI:n rajapintaa.
+  </p>
+
+  <p>
+    Maksun käsittely ja sen yhteydessä annetut tiedot hoidetaan
+    EezyPay-maksupalvelussa; sen oma tietosuojaseloste löytyy
+    maksusivulta.
+  </p>
+
+  <p>
+    Selaimessa säilytetään paikallisesti aktivointikoodi ja
+    ilmaisen kokeilun käytön tila.
+    Sivustolla on ollut Google Analytics -koodi;
+    sen käyttö ja suostumuksenhallinta pitää tarkistaa erikseen.
+  </p>
+
+  <h2>Oikeusperusteet ja säilytys</h2>
+
+  <p>
+    Diagnoosin ja käyttöoikeuden toteuttamiseen tarvittavia tietoja
+    käsitellään sopimuksen täyttämiseksi.
+    Lakisääteisten kirjanpito- ja muiden velvoitteiden edellyttämiä
+    tietoja käsitellään lain noudattamiseksi.
+    Mahdollinen ei-välttämätön analytiikka edellyttää
+    soveltuvaa suostumusta.
+  </p>
+
+  <p>
+    Tietoja säilytetään vain tarpeellisen ajan kunkin
+    käsittelytarkoituksen ja lain edellyttämällä tavalla.
+    Täsmälliset säilytysajat sekä palveluntarjoajien käytännöt
+    on vielä vahvistettava ennen maksullista julkaisua.
+  </p>
+
+  <h2>Oikeutesi</h2>
+
+  <p>
+    Voit pyytää pääsyä henkilötietoihisi, oikaisua, poistoa,
+    käsittelyn rajoitusta ja soveltuvissa tilanteissa
+    tietojen siirtoa tai vastustaa käsittelyä.
+    Voit peruuttaa mahdollisen suostumuksesi.
+  </p>
+
+  <p>
+    Lähetä pyyntö osoitteeseen
+    <a href="mailto:autosahkoapu@gmail.com">
+      autosahkoapu@gmail.com
+    </a>.
+  </p>
+
+  <p>
+    Voit tehdä kantelun tietosuojavaltuutetulle:
+    <a href="https://tietosuoja.fi/">tietosuoja.fi</a>.
+  </p>
+
+</main>
+
+<footer>
+  <nav>
+    <a href="/">Etusivu</a>
+    <a href="/kayttoehdot/">Käyttöehdot</a>
+    <a href="/tietosuoja/">Tietosuoja</a>
+    <a href="/peruuttaminen/">Peruuttaminen</a>
+  </nav>
+
+  <p>Autosähköapu AI · autosahkoapu@gmail.com</p>
+</footer>
+
+</body>
+</html>
