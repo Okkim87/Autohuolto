@@ -1,34 +1,58 @@
 const PLAN = {
   single: { label: '1 diagnoosi', credits: 30, expiresDays: 90 },
-  five:   { label: '5 diagnoosia', credits: 150, expiresDays: 180 },
-  month:  { label: '30 päivän käyttö', credits: 300, expiresDays: 30 }
+  five: { label: '5 diagnoosia', credits: 150, expiresDays: 180 },
+  month: { label: '30 päivän käyttö', credits: 300, expiresDays: 30 }
 };
 
 export default {
   async fetch(request, env) {
     const origin = request.headers.get('Origin') || '';
     const headers = corsHeaders(origin, env.ALLOWED_ORIGIN);
-    if (request.method === 'OPTIONS') return new Response(null, { headers });
-    if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405, headers);
+
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { headers });
+    }
+
+    if (request.method !== 'POST') {
+      return json({ error: 'Method not allowed' }, 405, headers);
+    }
 
     const url = new URL(request.url);
 
     try {
-      if (url.pathname === '/activate') return await activate(request, env, headers);
-      if (url.pathname === '/lookup') return await lookup(request, env, headers);
-      if (url.pathname === '/diagnose') return await diagnose(request, env, headers);
-      if (url.pathname === '/admin/create-code') return await createCode(request, env, headers);
+      if (url.pathname === '/activate') {
+        return await activate(request, env, headers);
+      }
+
+      if (url.pathname === '/lookup') {
+        return await lookup(request, env, headers);
+      }
+
+      if (url.pathname === '/diagnose') {
+        return await diagnose(request, env, headers);
+      }
+
+      if (url.pathname === '/admin/create-code') {
+        return await createCode(request, env, headers);
+      }
 
       return json({ error: 'Not found' }, 404, headers);
+
     } catch (e) {
       console.error(e);
-      return json({ error: 'Palvelinvirhe. Yritä uudelleen.' }, 500, headers);
+
+      return json({
+        error: 'Palvelinvirhe. Yritä uudelleen.'
+      }, 500, headers);
     }
   }
 };
 
 function corsHeaders(origin, allowed) {
-  const allow = !allowed || origin === allowed ? (origin || allowed || '*') : allowed;
+  const allow =
+    !allowed || origin === allowed
+      ? (origin || allowed || '*')
+      : allowed;
 
   return {
     'Access-Control-Allow-Origin': allow,
@@ -40,7 +64,10 @@ function corsHeaders(origin, allowed) {
 }
 
 function json(data, status = 200, headers = {}) {
-  return new Response(JSON.stringify(data), { status, headers });
+  return new Response(
+    JSON.stringify(data),
+    { status, headers }
+  );
 }
 
 function cleanCode(v = '') {
@@ -57,6 +84,7 @@ function cleanVin(v = '') {
 
 function remainingText(rec) {
   const left = Math.max(0, rec.credits || 0);
+
   const exp = rec.expiresAt
     ? new Date(rec.expiresAt).toLocaleDateString('fi-FI')
     : '';
@@ -82,7 +110,12 @@ async function getRecord(env, code) {
 class UserError extends Error {}
 
 function isHighVoltageTopic(c = {}, text = '') {
-  const hay = [c.car, c.engine, c.dtc, text]
+  const hay = [
+    c.car,
+    c.engine,
+    c.dtc,
+    text
+  ]
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
@@ -95,12 +128,15 @@ function hvRedirectReply() {
     blocked: true,
     test: 'Korkeajännitejärjestelmä',
     tool: '',
-    how: 'Autosähköapu AI ei anna korkeajännitejärjestelmän mittaus-, korjaus- tai purkuohjeita. Ota tässä asiassa suoraan yhteyttä minuun: autosahkoapu@gmail.com',
+    how:
+      'Autosähköapu AI ei anna korkeajännitejärjestelmän mittaus-, korjaus- tai purkuohjeita. Ota tässä asiassa suoraan yhteyttä minuun: autosahkoapu@gmail.com',
     expected: '',
     ifNormal: '',
     ifAbnormal: '',
-    reason: '',
-    caution: 'Älä koske korkeajännitejärjestelmään, oransseihin HV-kaapeleihin tai HV-komponentteihin tämän verkkopalvelun ohjeiden perusteella.'
+    reason:
+      'Korkeajännitejärjestelmään liittyvät työt vaativat erillisen turvallisen menettelyn ja asianmukaisen osaamisen.',
+    caution:
+      'Korkeajännitejärjestelmiin liittyvät mittaukset ja korjaukset vaativat asianmukaisen koulutuksen ja turvalliset työmenetelmät.'
   };
 }
 
@@ -127,7 +163,13 @@ async function activate(request, env, headers) {
 
 async function lookup(request, env, headers) {
   const body = await request.json();
-  const caseData = body.caseData || {};
+
+  const caseData = enrichCaseData(
+    body.caseData || {},
+    body.history || [],
+    body.userMessage || ''
+  );
+
   const context = await getTechnicalContext(caseData, env);
 
   return json({
@@ -142,16 +184,17 @@ async function diagnose(request, env, headers) {
     const code = cleanCode(body.code);
     const rec = await getRecord(env, code);
 
-    const history = Array.isArray(body.history)
-      ? body.history.slice(-18)
-      : [];
+    const history =
+      Array.isArray(body.history)
+        ? body.history.slice(-18)
+        : [];
 
     const userMessage = String(
-      body.userMessage || body.measurementResult || ''
+      body.userMessage ||
+      body.measurementResult ||
+      ''
     ).slice(0, 5000);
 
-    // Poimii auton tiedot automaattisesti keskustelusta.
-    // Esim. "Mondeo 2010 2.0 bensa" -> Ford Mondeo / 2010 / 2.0 bensa.
     const caseData = enrichCaseData(
       body.caseData || {},
       history,
@@ -192,7 +235,8 @@ async function diagnose(request, env, headers) {
       }, 200, headers);
     }
 
-    const technicalContext = await getTechnicalContext(caseData, env);
+    const technicalContext =
+      await getTechnicalContext(caseData, env);
 
     const prompt = buildPrompt(
       caseData,
@@ -202,10 +246,12 @@ async function diagnose(request, env, headers) {
       attachments
     );
 
-    const userContent = [{
-      type: 'input_text',
-      text: prompt
-    }];
+    const userContent = [
+      {
+        type: 'input_text',
+        text: prompt
+      }
+    ];
 
     for (const a of attachments) {
       if (a.kind === 'image' && a.dataUrl) {
@@ -233,10 +279,12 @@ async function diagnose(request, env, headers) {
           input: [
             {
               role: 'system',
-              content: [{
-                type: 'input_text',
-                text: SYSTEM_PROMPT
-              }]
+              content: [
+                {
+                  type: 'input_text',
+                  text: SYSTEM_PROMPT
+                }
+              ]
             },
             {
               role: 'user',
@@ -330,6 +378,7 @@ function normalizeAttachments(raw) {
         kind: 'image',
         dataUrl: x.dataUrl
       });
+
       continue;
     }
 
@@ -346,13 +395,21 @@ function normalizeAttachments(raw) {
 }
 
 async function getTechnicalContext(c, env) {
-  const [vehicle, dtcs, obdex] = await Promise.all([
+  const [
+    vehicle,
+    dtcs,
+    obdex
+  ] = await Promise.all([
     decodeVin(c.vin, c.year),
     lookupDtcs(c.dtc, env),
     lookupObdex(c.dtc)
   ]);
 
-  const [obdb, wal33d, obdexPids] = await Promise.all([
+  const [
+    obdb,
+    wal33d,
+    obdexPids
+  ] = await Promise.all([
     lookupObdbSignals(c, vehicle),
     lookupWal33d(c.dtc, env),
     lookupObdexPids(c, obdex)
@@ -371,7 +428,9 @@ async function getTechnicalContext(c, env) {
 async function decodeVin(vinRaw, yearRaw) {
   const vin = cleanVin(vinRaw);
 
-  if (vin.length < 11) return null;
+  if (vin.length < 11) {
+    return null;
+  }
 
   const year = String(yearRaw || '')
     .replace(/[^0-9]/g, '')
@@ -388,11 +447,14 @@ async function decodeVin(vinRaw, yearRaw) {
   }
 
   try {
-    const r = await fetch(url.toString(), {
-      headers: {
-        'User-Agent': 'AutosahkoapuAI/1.0'
+    const r = await fetch(
+      url.toString(),
+      {
+        headers: {
+          'User-Agent': 'AutosahkoapuAI/1.0'
+        }
       }
-    });
+    );
 
     if (!r.ok) {
       return {
@@ -404,7 +466,6 @@ async function decodeVin(vinRaw, yearRaw) {
 
     const raw = await r.json();
     const x = raw?.Results?.[0] || {};
-
     const value = k => String(x[k] || '').trim();
 
     return {
@@ -437,9 +498,10 @@ async function decodeVin(vinRaw, yearRaw) {
 }
 
 function parseDtcCodes(raw = '') {
-  const found = String(raw)
-    .toUpperCase()
-    .match(/\b[PBCU][0-9A-F]{4}\b/g) || [];
+  const found =
+    String(raw)
+      .toUpperCase()
+      .match(/\b[PBCU][0-9A-F]{4}\b/g) || [];
 
   return [...new Set(found)].slice(0, 12);
 }
@@ -452,7 +514,6 @@ const VEHICLE_MODELS = [
   ['Ford','Kuga',['kuga']],
   ['Ford','Transit',['transit']],
   ['Ford','Mustang Mach-E',['mach-e','mach e']],
-
   ['Volkswagen','Golf',['golf']],
   ['Volkswagen','Passat',['passat']],
   ['Volkswagen','Polo',['polo']],
@@ -461,7 +522,6 @@ const VEHICLE_MODELS = [
   ['Volkswagen','Transporter',['transporter']],
   ['Volkswagen','ID.3',['id.3','id3']],
   ['Volkswagen','ID.4',['id.4','id4']],
-
   ['Toyota','Yaris',['yaris']],
   ['Toyota','Corolla',['corolla']],
   ['Toyota','Avensis',['avensis']],
@@ -469,13 +529,11 @@ const VEHICLE_MODELS = [
   ['Toyota','Prius',['prius']],
   ['Toyota','RAV4',['rav4','rav 4']],
   ['Toyota','C-HR',['c-hr','chr']],
-
   ['Skoda','Octavia',['octavia']],
   ['Skoda','Superb',['superb']],
   ['Skoda','Fabia',['fabia']],
   ['Skoda','Kodiaq',['kodiaq']],
   ['Skoda','Karoq',['karoq']],
-
   ['Volvo','V40',['v40']],
   ['Volvo','V50',['v50']],
   ['Volvo','V60',['v60']],
@@ -484,7 +542,6 @@ const VEHICLE_MODELS = [
   ['Volvo','XC40',['xc40']],
   ['Volvo','XC60',['xc60']],
   ['Volvo','XC90',['xc90']],
-
   ['Audi','A3',['a3']],
   ['Audi','A4',['a4']],
   ['Audi','A5',['a5']],
@@ -492,53 +549,44 @@ const VEHICLE_MODELS = [
   ['Audi','Q3',['q3']],
   ['Audi','Q5',['q5']],
   ['Audi','Q7',['q7']],
-
   ['Nissan','Qashqai',['qashqai']],
   ['Nissan','Juke',['juke']],
   ['Nissan','Leaf',['leaf']],
   ['Nissan','X-Trail',['x-trail','x trail']],
-
   ['Opel','Astra',['astra']],
   ['Opel','Insignia',['insignia']],
   ['Opel','Corsa',['corsa']],
   ['Opel','Vectra',['vectra']],
   ['Opel','Zafira',['zafira']],
-
+  ['Opel','Ampera',['ampera']],
   ['Hyundai','i20',['i20']],
   ['Hyundai','i30',['i30']],
   ['Hyundai','Ioniq',['ioniq']],
   ['Hyundai','Ioniq 5',['ioniq 5']],
   ['Hyundai','Tucson',['tucson']],
   ['Hyundai','Kona',['kona']],
-
   ['Kia','Ceed',['ceed',"cee'd"]],
   ['Kia','Rio',['rio']],
   ['Kia','Sportage',['sportage']],
   ['Kia','Sorento',['sorento']],
   ['Kia','Niro',['niro']],
   ['Kia','EV6',['ev6']],
-
   ['Peugeot','308',['308']],
   ['Peugeot','3008',['3008']],
   ['Peugeot','508',['508']],
   ['Peugeot','2008',['2008']],
-
   ['Renault','Clio',['clio']],
   ['Renault','Megane',['megane','mégane']],
   ['Renault','Captur',['captur']],
   ['Renault','Kadjar',['kadjar']],
-
   ['Mazda','Mazda 3',['mazda 3','mazda3']],
   ['Mazda','Mazda 6',['mazda 6','mazda6']],
   ['Mazda','CX-5',['cx-5','cx5']],
-
   ['Honda','Civic',['civic']],
   ['Honda','Accord',['accord']],
   ['Honda','CR-V',['cr-v','crv']],
-
   ['Mitsubishi','Outlander',['outlander']],
   ['Mitsubishi','ASX',['asx']],
-
   ['Subaru','Outback',['outback']],
   ['Subaru','Forester',['forester']],
   ['Subaru','Impreza',['impreza']]
@@ -602,8 +650,6 @@ function findVehicleFromText(text = '') {
   const t = String(text);
   const low = t.toLowerCase();
 
-  // Tunnettu mallinimi voi yksin kertoa merkin.
-  // Esim. Mondeo -> Ford.
   for (const [make, model, aliases] of VEHICLE_MODELS) {
     if (
       aliases.some(a =>
@@ -621,7 +667,6 @@ function findVehicleFromText(text = '') {
     }
   }
 
-  // BMW-mallimerkinnät, esim. 320i, 520d, X3.
   const bmw = low.match(
     /\b(?:bmw\s*)?((?:[1-8][0-9]{2}[dix]?)|x[1-7]|i[3478])\b/i
   );
@@ -640,7 +685,6 @@ function findVehicleFromText(text = '') {
     };
   }
 
-  // Mercedesin tavalliset mallimerkinnät.
   const merc = t.match(
     /\b(?:mercedes(?:-benz)?|mb)\s+([acegsv][ -]?[0-9]{2,3}[a-z0-9-]*)\b/i
   );
@@ -657,7 +701,6 @@ function findVehicleFromText(text = '') {
     };
   }
 
-  // Jos käyttäjä kirjoittaa merkin, ota seuraava token malliksi.
   for (const rawMake of VEHICLE_MAKES) {
     const re = new RegExp(
       `\\b${escapeRe(rawMake)}\\b\\s+([A-Za-z0-9][A-Za-z0-9.\\-]{1,20})`,
@@ -667,9 +710,10 @@ function findVehicleFromText(text = '') {
     const m = t.match(re);
 
     if (m) {
-      const make = rawMake === 'VW'
-        ? 'Volkswagen'
-        : rawMake.replace('Š', 'S');
+      const make =
+        rawMake === 'VW'
+          ? 'Volkswagen'
+          : rawMake.replace('Š', 'S');
 
       return {
         make,
@@ -723,19 +767,13 @@ function extractEngine(text = '') {
 }
 
 function enrichCaseData(raw = {}, history = [], userMessage = '') {
-  const c = {
-    ...raw
-  };
+  const c = { ...raw };
 
   c.tools = Array.isArray(raw.tools)
     ? raw.tools
     : [];
 
-  const text = recentUserText(
-    history,
-    userMessage
-  );
-
+  const text = recentUserText(history, userMessage);
   const v = findVehicleFromText(text);
 
   if (!String(c.car || '').trim() && v.car) {
@@ -754,8 +792,6 @@ function enrichCaseData(raw = {}, history = [], userMessage = '') {
     c.dtc = parseDtcCodes(text).join(', ');
   }
 
-  // Säilytetään merkki ja malli erillisinä sisäisinä kenttinä
-  // OBDb-hakua varten.
   c.make = String(
     c.make ||
     v.make ||
@@ -774,9 +810,7 @@ function enrichCaseData(raw = {}, history = [], userMessage = '') {
 async function lookupDtcs(raw, env) {
   const codes = parseDtcCodes(raw);
 
-  if (!codes.length) {
-    return [];
-  }
+  if (!codes.length) return [];
 
   if (!env.AUTODIAG_DB) {
     return codes.map(code => ({
@@ -851,9 +885,7 @@ async function lookupDtcs(raw, env) {
 async function lookupObdex(raw) {
   const codes = parseDtcCodes(raw);
 
-  if (!codes.length) {
-    return [];
-  }
+  if (!codes.length) return [];
 
   try {
     const cache = caches.default;
@@ -876,20 +908,14 @@ async function lookupObdex(raw) {
         throw new Error(`OBDex HTTP ${live.status}`);
       }
 
-      resp = new Response(
-        live.body,
-        live
-      );
+      resp = new Response(live.body, live);
 
       resp.headers.set(
         'Cache-Control',
         'public, max-age=86400'
       );
 
-      await cache.put(
-        req,
-        resp.clone()
-      );
+      await cache.put(req, resp.clone());
     }
 
     const all = await resp.json();
@@ -908,18 +934,22 @@ async function lookupObdex(raw) {
         category: x.category,
         title: x?.title?.en || '',
         description: x?.description?.en || '',
-        affectedComponents: Array.isArray(x.affected_components)
-          ? x.affected_components.slice(0, 8)
-          : [],
-        commonCauses: Array.isArray(x.common_causes)
-          ? x.common_causes.slice(0, 8)
-          : [],
-        symptoms: Array.isArray(x.symptoms)
-          ? x.symptoms.slice(0, 8)
-          : [],
-        relatedCodes: Array.isArray(x.related_codes)
-          ? x.related_codes.slice(0, 8)
-          : [],
+        affectedComponents:
+          Array.isArray(x.affected_components)
+            ? x.affected_components.slice(0, 8)
+            : [],
+        commonCauses:
+          Array.isArray(x.common_causes)
+            ? x.common_causes.slice(0, 8)
+            : [],
+        symptoms:
+          Array.isArray(x.symptoms)
+            ? x.symptoms.slice(0, 8)
+            : [],
+        relatedCodes:
+          Array.isArray(x.related_codes)
+            ? x.related_codes.slice(0, 8)
+            : [],
         available: true
       }));
 
@@ -960,53 +990,14 @@ async function lookupObdexPids(c, obdexRows = []) {
   );
 
   const aliases = {
-    maf: [
-      'maf',
-      'mass air',
-      'air flow',
-      'ilmamäär'
-    ],
-    map: [
-      'map',
-      'manifold',
-      'intake pressure'
-    ],
-    fuel: [
-      'fuel',
-      'lambda',
-      'oxygen',
-      'o2',
-      'trim',
-      'seos',
-      'polttoaine'
-    ],
-    coolant: [
-      'coolant',
-      'temperature',
-      'ect',
-      'jäähdytys'
-    ],
-    throttle: [
-      'throttle',
-      'tps',
-      'kaasuläpp'
-    ],
-    rpm: [
-      'rpm',
-      'engine speed',
-      'kierros'
-    ],
-    speed: [
-      'vehicle speed',
-      'vss',
-      'nopeus'
-    ],
-    voltage: [
-      'voltage',
-      'battery',
-      'control module voltage',
-      'jännite'
-    ]
+    maf: ['maf','mass air','air flow','ilmamäär'],
+    map: ['map','manifold','intake pressure'],
+    fuel: ['fuel','lambda','oxygen','o2','trim','seos','polttoaine'],
+    coolant: ['coolant','temperature','ect','jäähdytys'],
+    throttle: ['throttle','tps','kaasuläpp'],
+    rpm: ['rpm','engine speed','kierros'],
+    speed: ['vehicle speed','vss','nopeus'],
+    voltage: ['voltage','battery','control module voltage','jännite']
   };
 
   const hay = rawTerms
@@ -1015,19 +1006,9 @@ async function lookupObdexPids(c, obdexRows = []) {
 
   const wanted = [];
 
-  for (
-    const [k, words]
-    of Object.entries(aliases)
-  ) {
-    if (
-      words.some(w =>
-        hay.includes(w)
-      )
-    ) {
-      wanted.push(
-        ...words,
-        k
-      );
+  for (const [k, words] of Object.entries(aliases)) {
+    if (words.some(w => hay.includes(w))) {
+      wanted.push(...words, k);
     }
   }
 
@@ -1066,25 +1047,17 @@ async function lookupObdexPids(c, obdexRows = []) {
       const live = await fetch(req);
 
       if (!live.ok) {
-        throw new Error(
-          `OBDex PID HTTP ${live.status}`
-        );
+        throw new Error(`OBDex PID HTTP ${live.status}`);
       }
 
-      resp = new Response(
-        live.body,
-        live
-      );
+      resp = new Response(live.body, live);
 
       resp.headers.set(
         'Cache-Control',
         'public, max-age=86400'
       );
 
-      await cache.put(
-        req,
-        resp.clone()
-      );
+      await cache.put(req, resp.clone());
     }
 
     const data = await resp.json();
@@ -1092,25 +1065,20 @@ async function lookupObdexPids(c, obdexRows = []) {
     const list = Array.isArray(data)
       ? data
       : (
-        data?.pids ||
-        data?.data ||
-        []
-      );
+          data?.pids ||
+          data?.data ||
+          []
+        );
 
     const scored = [];
 
     for (const pid of list) {
-      const txt = JSON.stringify(pid)
-        .toLowerCase();
+      const txt = JSON.stringify(pid).toLowerCase();
 
       let score = 0;
 
       for (const w of wanted) {
-        if (
-          txt.includes(
-            String(w).toLowerCase()
-          )
-        ) {
+        if (txt.includes(String(w).toLowerCase())) {
           score++;
         }
       }
@@ -1123,9 +1091,7 @@ async function lookupObdexPids(c, obdexRows = []) {
       }
     }
 
-    scored.sort(
-      (a, b) => b.score - a.score
-    );
+    scored.sort((a, b) => b.score - a.score);
 
     return scored
       .slice(0, 18)
@@ -1136,11 +1102,7 @@ async function lookupObdexPids(c, obdexRows = []) {
       }));
 
   } catch (e) {
-    console.error(
-      'OBDex PID',
-      e
-    );
-
+    console.error('OBDex PID', e);
     return [];
   }
 }
@@ -1220,9 +1182,7 @@ async function lookupObdbSignals(c, vehicle) {
         }
       );
 
-      if (!r.ok) {
-        continue;
-      }
+      if (!r.ok) continue;
 
       const data = await r.json();
       const signals = [];
@@ -1255,14 +1215,10 @@ async function lookupObdbSignals(c, vehicle) {
             optimalValue: sig?.fmt?.oval
           });
 
-          if (signals.length >= 80) {
-            break;
-          }
+          if (signals.length >= 80) break;
         }
 
-        if (signals.length >= 80) {
-          break;
-        }
+        if (signals.length >= 80) break;
       }
 
       return {
@@ -1274,11 +1230,7 @@ async function lookupObdbSignals(c, vehicle) {
       };
 
     } catch (e) {
-      console.error(
-        'OBDb',
-        repo,
-        e
-      );
+      console.error('OBDb', repo, e);
     }
   }
 
@@ -1293,9 +1245,7 @@ async function lookupObdbSignals(c, vehicle) {
 async function lookupWal33d(raw, env) {
   const codes = parseDtcCodes(raw);
 
-  if (!codes.length) {
-    return [];
-  }
+  if (!codes.length) return [];
 
   if (!env.OPEN_DTC_DB) {
     return codes.map(code => ({
@@ -1342,10 +1292,7 @@ async function lookupWal33d(raw, env) {
       }
 
     } catch (e) {
-      console.error(
-        'Wal33D query',
-        e
-      );
+      console.error('Wal33D query', e);
 
       out.push({
         source: 'Wal33D',
@@ -1390,22 +1337,25 @@ function sourceSummary(ctx) {
     });
   }
 
-  const found = (ctx?.dtcs || [])
-    .filter(x => x.available);
+  const found =
+    (ctx?.dtcs || [])
+      .filter(x => x.available);
 
-  const missing = (ctx?.dtcs || [])
-    .filter(x => !x.available);
+  const missing =
+    (ctx?.dtcs || [])
+      .filter(x => !x.available);
 
   if (found.length) {
     sources.push({
       name: 'DTC',
       provider: 'Autodiag2',
       ok: true,
-      detail: [
-        ...new Set(
-          found.map(x => x.code)
-        )
-      ].join(', ')
+      detail:
+        [
+          ...new Set(
+            found.map(x => x.code)
+          )
+        ].join(', ')
     });
   }
 
@@ -1424,8 +1374,9 @@ function sourceSummary(ctx) {
     });
   }
 
-  const obdexFound = (ctx?.obdex || [])
-    .filter(x => x.available);
+  const obdexFound =
+    (ctx?.obdex || [])
+      .filter(x => x.available);
 
   if (obdexFound.length) {
     sources.push({
@@ -1452,39 +1403,39 @@ function sourceSummary(ctx) {
     });
   }
 
-  if (ctx?.obdb?.available) {
+  const obdbSignalCount =
+    Array.isArray(ctx?.obdb?.signals)
+      ? ctx.obdb.signals.length
+      : 0;
+
+  if (
+    ctx?.obdb?.available === true &&
+    obdbSignalCount > 0
+  ) {
     sources.push({
       name: 'Ajoneuvodata',
       provider: 'OBDb',
       ok: true,
       detail:
-        `${ctx.obdb.repo} · ${ctx.obdb.signals?.length || 0} signaalia`
-    });
-  } else if (ctx?.obdb) {
-    sources.push({
-      name: 'Ajoneuvodata',
-      provider: 'OBDb',
-      ok: false,
-      detail:
-        ctx.obdb.repo ||
-        ctx.obdb.note ||
-        'Ei osumaa'
+        `${ctx.obdb.repo} · ${obdbSignalCount} signaalia`
     });
   }
 
-  const wal = (ctx?.wal33d || [])
-    .filter(x => x.available);
+  const wal =
+    (ctx?.wal33d || [])
+      .filter(x => x.available);
 
   if (wal.length) {
     sources.push({
       name: 'Valmistajakohtainen DTC',
       provider: 'Wal33D',
       ok: true,
-      detail: [
-        ...new Set(
-          wal.map(x => x.code)
-        )
-      ].join(', ')
+      detail:
+        [
+          ...new Set(
+            wal.map(x => x.code)
+          )
+        ].join(', ')
     });
   }
 
@@ -1527,7 +1478,9 @@ function parseReply(text) {
       expected: obj.expected || '',
       ifNormal: obj.ifNormal || '',
       ifAbnormal: obj.ifAbnormal || '',
-      reason: obj.reason || '',
+      reason:
+        String(obj.reason || '').trim() ||
+        'Tämä mittaus auttaa rajaamaan mahdollisia vikasyitä ennen seuraavaa tutkimusvaihetta ja vähentää turhaa osien vaihtamista.',
       caution: obj.caution || ''
     };
 
@@ -1541,7 +1494,8 @@ function parseReply(text) {
       expected: '',
       ifNormal: '',
       ifAbnormal: '',
-      reason: '',
+      reason:
+        'Tämä mittaus auttaa rajaamaan mahdollisia vikasyitä ennen seuraavaa tutkimusvaihetta.',
       caution:
         'Älä tee vaarallista mittausta ilman osaamista.'
     };
@@ -1558,6 +1512,10 @@ Ohjaa yksi perusteltu seuraava mittaus kerrallaan ja odota sen tulosta ennen seu
 
 Palauta AINA vain yksi JSON-objekti.
 Älä palauta markdownia tai muuta tekstiä.
+
+reason-kenttä on pakollinen eikä saa koskaan olla tyhjä.
+Kerro siinä 1–3 selkeällä lauseella, miksi juuri tämä mittaus auttaa rajaamaan vikaa ja mitä diagnostista kysymystä sillä ratkaistaan.
+Kuluttajatilassa selitä asia tavallisella kielellä.
 
 Kentät:
 
@@ -1648,7 +1606,7 @@ test="Korkeajännitejärjestelmä"
 
 how="Autosähköapu AI ei anna korkeajännitejärjestelmän mittaus-, korjaus- tai purkuohjeita. Ota tässä asiassa suoraan yhteyttä minuun: autosahkoapu@gmail.com"
 
-caution="Älä koske korkeajännitejärjestelmään tai HV-komponentteihin tämän verkkopalvelun ohjeiden perusteella."
+caution="Korkeajännitejärjestelmiin liittyvät mittaukset ja korjaukset vaativat asianmukaisen koulutuksen ja turvalliset työmenetelmät."
 
 Muut kentät voivat olla tyhjiä.
 
@@ -1670,56 +1628,67 @@ function buildPrompt(
   ctx,
   attachments = []
 ) {
-  const past = h
-    .map((x, i) => {
-      if (x?.role === 'user') {
-        return `Käyttäjä: ${String(x.text || '').slice(0, 1800)}`;
-      }
+  const past =
+    h
+      .map((x, i) => {
+        if (x?.role === 'user') {
+          return `Käyttäjä: ${String(x.text || '').slice(0, 1800)}`;
+        }
 
-      if (x?.role === 'assistant') {
-        return `AI: ${JSON.stringify(x.reply || {}).slice(0, 2500)}`;
-      }
+        if (x?.role === 'assistant') {
+          return `AI: ${JSON.stringify(x.reply || {}).slice(0, 2500)}`;
+        }
 
-      return `Vaihe ${i + 1}: ${JSON.stringify(x).slice(0, 2200)}`;
-    })
-    .join('\n');
+        return `Vaihe ${i + 1}: ${JSON.stringify(x).slice(0, 2200)}`;
+      })
+      .join('\n');
 
-  const vehicle = ctx?.vehicle
-    ? JSON.stringify(ctx.vehicle)
-    : 'VIN-lähdedataa ei ole.';
+  const vehicle =
+    ctx?.vehicle
+      ? JSON.stringify(ctx.vehicle)
+      : 'VIN-lähdedataa ei ole.';
 
-  const dtcs = ctx?.dtcs?.length
-    ? JSON.stringify(ctx.dtcs)
-    : 'Autodiag2-lähdedataa ei ole tälle pyynnölle.';
+  const dtcs =
+    ctx?.dtcs?.length
+      ? JSON.stringify(ctx.dtcs)
+      : 'Autodiag2-lähdedataa ei ole tälle pyynnölle.';
 
-  const obdex = ctx?.obdex?.length
-    ? JSON.stringify(ctx.obdex)
-    : 'OBDex-lähdedataa ei ole tälle pyynnölle.';
+  const obdex =
+    ctx?.obdex?.length
+      ? JSON.stringify(ctx.obdex)
+      : 'OBDex-lähdedataa ei ole tälle pyynnölle.';
 
-  const obdexPids = ctx?.obdexPids?.length
-    ? JSON.stringify(ctx.obdexPids)
-    : 'OBDex PID -dataa ei löytynyt tälle tapaukselle.';
+  const obdexPids =
+    ctx?.obdexPids?.length
+      ? JSON.stringify(ctx.obdexPids)
+      : 'OBDex PID -dataa ei löytynyt tälle tapaukselle.';
 
-  const obdb = ctx?.obdb?.available
-    ? JSON.stringify(ctx.obdb)
-    : 'OBDb-ajoneuvosignaaleja ei löytynyt.';
+  const obdb =
+    ctx?.obdb?.available &&
+    Array.isArray(ctx?.obdb?.signals) &&
+    ctx.obdb.signals.length > 0
+      ? JSON.stringify(ctx.obdb)
+      : 'OBDb-ajoneuvosignaaleja ei löytynyt.';
 
-  const wal33d = ctx?.wal33d?.length
-    ? JSON.stringify(ctx.wal33d)
-    : 'Wal33D-lähdedataa ei ole käytössä.';
+  const wal33d =
+    ctx?.wal33d?.length
+      ? JSON.stringify(ctx.wal33d)
+      : 'Wal33D-lähdedataa ei ole käytössä.';
 
-  const textFiles = attachments
-    .filter(a => a.kind === 'text')
-    .map(a =>
-      `TIEDOSTO ${a.name}:\n${a.text}`
-    )
-    .join('\n\n')
-    .slice(0, 120000);
+  const textFiles =
+    attachments
+      .filter(a => a.kind === 'text')
+      .map(a =>
+        `TIEDOSTO ${a.name}:\n${a.text}`
+      )
+      .join('\n\n')
+      .slice(0, 120000);
 
-  const imageNames = attachments
-    .filter(a => a.kind === 'image')
-    .map(a => a.name)
-    .join(', ');
+  const imageNames =
+    attachments
+      .filter(a => a.kind === 'image')
+      .map(a => a.name)
+      .join(', ');
 
   return `
 Käyttäjätaso:
@@ -1792,11 +1761,7 @@ Anna yksi seuraava järkevä mittaus JSON-muodossa.
 `;
 }
 
-async function createCode(
-  request,
-  env,
-  headers
-) {
+async function createCode(request, env, headers) {
   const auth =
     request.headers.get('Authorization') || '';
 
