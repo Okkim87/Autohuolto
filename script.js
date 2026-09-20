@@ -365,11 +365,9 @@ function addTyping() {
   return id;
 }
 
-// Päivitetty vastauskortti:
-// - perustelu näkyy aina
-// - varoitus on erillinen "Huomioitavaa"-osio
+// Mittausohje ja tavallinen keskusteluvastaus näytetään eri tavoin.
 function addAssistant(r, sources = []) {
-  const sourceHtml = sources.length
+  const sourceHtml = Array.isArray(sources) && sources.length
     ? `<div class="bubble-sources">${sources.map(x =>
         `<span>${esc(x.name || 'Data')}: ${esc(x.provider || '')} ${esc(x.detail || '')}</span>`
       ).join('')}</div>`
@@ -402,53 +400,99 @@ function addAssistant(r, sources = []) {
     return;
   }
 
+  const title = String(r?.test || '').trim();
   const reason = String(r?.reason || '').trim();
   const caution = String(r?.caution || '').trim();
+
+  // Tavallisissa keskusteluvastauksissa mittauskentät ovat tyhjiä.
+  // Otsikkokenttä tarkistetaan lisäksi, jotta "Vastaus kysymykseen"
+  // ei koskaan näy "Seuraava mittaus" -otsikon alla.
+  const conversationTitle =
+    /^(vastaus(?: kysymykseen)?|mittaustuloksen arviointi|tarkennus|ai-vastaus)$/i.test(title);
+
+  const hasMeasurementFields = Boolean(
+    r?.tool ||
+    r?.expected ||
+    r?.ifNormal ||
+    r?.ifAbnormal ||
+    r?.ok ||
+    r?.bad
+  );
+
+  const isMeasurement = !conversationTitle && hasMeasurementFields;
+
+  const category = isMeasurement
+    ? 'Seuraava mittaus'
+    : 'Vastaus kysymykseen';
+
+  const heading = conversationTitle || !title
+    ? ''
+    : `<h4>${esc(title)}</h4>`;
+
+  const measurementHtml = isMeasurement
+    ? `
+      ${(r?.tool || r?.expected)
+        ? `<div class="measure-grid">
+            ${r?.tool
+              ? `<div>
+                  <small>MITTALAITE</small>
+                  <span>${esc(r.tool)}</span>
+                </div>`
+              : ''}
+            ${r?.expected
+              ? `<div>
+                  <small>MITÄ ODOTETAAN</small>
+                  <span>${esc(r.expected)}</span>
+                </div>`
+              : ''}
+          </div>`
+        : ''}
+
+      ${(r?.ifNormal || r?.ok)
+        ? `<p class="branch ok">
+            <b>Jos tulos on normaali:</b>
+            ${esc(r.ifNormal || r.ok)}
+          </p>`
+        : ''}
+
+      ${(r?.ifAbnormal || r?.bad)
+        ? `<p class="branch bad">
+            <b>Jos tulos poikkeaa:</b>
+            ${esc(r.ifAbnormal || r.bad)}
+          </p>`
+        : ''}
+
+      ${reason
+        ? `<div class="diagnostic-reason">
+            <strong>Miksi tämä mitataan?</strong>
+            <p>${esc(reason)}</p>
+          </div>`
+        : ''}
+    `
+    : (
+      reason
+        ? `<div class="diagnostic-reason">
+            <strong>Perustelu</strong>
+            <p>${esc(reason)}</p>
+          </div>`
+        : ''
+    );
 
   const html = `
     <article class="chat-row assistant-row">
       <div class="chat-avatar">A+</div>
       <div class="chat-bubble assistant-bubble diagnostic-message">
-        <strong>Seuraava mittaus</strong>
-        <h4>${esc(r?.test || 'Seuraava testi')}</h4>
+        <strong>${category}</strong>
 
-        ${r?.how ? `<p>${esc(r.how)}</p>` : ''}
+        ${isMeasurement
+          ? `<h4>${esc(title || 'Seuraava tarkistus')}</h4>`
+          : heading}
 
-        <div class="measure-grid">
-          ${r?.tool
-            ? `<div>
-                <small>MITTALAITE</small>
-                <span>${esc(r.tool)}</span>
-              </div>`
-            : ''}
-
-          ${r?.expected
-            ? `<div>
-                <small>MITÄ ODOTETAAN</small>
-                <span>${esc(r.expected)}</span>
-              </div>`
-            : ''}
-        </div>
-
-        ${r?.ifNormal || r?.ok
-          ? `<p class="branch ok">
-              <b>Jos tulos on normaali:</b> ${esc(r.ifNormal || r.ok)}
-            </p>`
+        ${r?.how
+          ? `<p>${esc(r.how).replace(/\n/g, '<br>')}</p>`
           : ''}
 
-        ${r?.ifAbnormal || r?.bad
-          ? `<p class="branch bad">
-              <b>Jos tulos poikkeaa:</b> ${esc(r.ifAbnormal || r.bad)}
-            </p>`
-          : ''}
-
-        <div class="diagnostic-reason">
-          <strong>Miksi tämä mitataan?</strong>
-          <p>${esc(
-            reason ||
-            'Tämä mittaus auttaa rajaamaan mahdollisia vikasyitä ja valitsemaan seuraavan tutkimusvaiheen.'
-          )}</p>
-        </div>
+        ${measurementHtml}
 
         ${caution
           ? `<div class="caution">
@@ -531,7 +575,9 @@ function localFreePlan(c, text) {
       test: consumer
         ? 'Tarkista ilmamäärämittarin (MAF) arvo OBD-sovelluksesta'
         : 'Tarkista MAF-livedatan loogisuus',
-      tool: has('obd') ? 'OBD / testeri' : 'Silmämääräinen perustarkastus',
+      tool: has('obd')
+        ? 'OBD / testeri'
+        : 'Silmämääräinen perustarkastus',
       how: has('obd')
         ? (
             consumer
@@ -567,7 +613,10 @@ function localFreePlan(c, text) {
     };
   }
 
-  if (/U[0-9A-F]{4}/.test(dtc) || /can|väyl|kommunik|yhteys.*ohjain/.test(s)) {
+  if (
+    /U[0-9A-F]{4}/.test(dtc) ||
+    /can|väyl|kommunik|yhteys.*ohjain/.test(s)
+  ) {
     return {
       test: consumer
         ? 'Tee koko auton vikakoodiluku ja kirjaa mihin ohjainlaitteisiin testeri saa yhteyden'
