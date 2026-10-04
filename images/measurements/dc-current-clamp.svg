@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 640" role="img" aria-labelledby="title desc">
+  <title id="title">12 V akun lepovirran mittaus DC-virtapihdillä</title>
+  <desc id="desc">DC-virtapihdin leuat suljetaan yhden akun miinusjohtimen ympärille. Akun kaapeleita ei irroteta. Mittari nollataan ennen asettamista johdon ympärille. Pelkkä AC-virtapihti ei mittaa akun tasavirtaa.</desc>
+  <style>text{font-family:Arial,sans-serif;fill:#e6edf6;font-size:20px}.small{font-size:17px;fill:#aebed0}.label{font-weight:700}.wire{fill:none;stroke-width:7;stroke-linecap:round;stroke-linejoin:round}</style>
+  <rect width="800" height="640" rx="22" fill="#0b121b"/>
+  <text x="30" y="43" class="label" font-size="25">DC-virtapihti yhden johtimen ympärille</text>
+  <text x="30" y="74" class="small">12 V järjestelmä · kaapeleita ei irroteta</text>
+  <path d="M130 180V115H670V180" class="wire" stroke="#f06a66"/>
+  <rect x="65" y="180" width="210" height="130" rx="14" fill="#1a293a" stroke="#6a809b" stroke-width="2"/>
+  <text x="170" y="258" text-anchor="middle" class="label">12 V AKKU</text>
+  <text x="130" y="212" text-anchor="middle" class="label">+</text>
+  <text x="245" y="212" text-anchor="middle" class="label">−</text>
+  <rect x="120" y="168" width="22" height="18" rx="3" fill="#f06a66"/>
+  <rect x="234" y="168" width="22" height="18" rx="3" fill="#d4dfeb"/>
+  <rect x="555" y="180" width="180" height="130" rx="14" fill="#1a293a" stroke="#6a809b" stroke-width="2"/>
+  <text x="645" y="254" text-anchor="middle" class="label">AUTO</text>
+  <path d="M245 180V145H390V380H645V310" class="wire" stroke="#d4dfeb"/>
+  <text x="390" y="180" class="small" dx="20">Akun miinusjohdin</text>
+  <path d="M390 267C327 267 327 360 390 360C453 360 453 267 390 267" fill="none" stroke="#e5ac42" stroke-width="20"/>
+  <rect x="345" y="350" width="90" height="145" rx="16" fill="#e5ac42"/>
+  <rect x="357" y="370" width="66" height="45" rx="5" fill="#172535"/>
+  <text x="390" y="399" text-anchor="middle" font-size="17" class="label">A DC</text>
+  <circle cx="390" cy="451" r="15" fill="#172535"/>
+  <text x="490" y="295" class="label">Leuat kiinni</text>
+  <text x="490" y="321" class="small">Vain yksi johdin</text>
+  <text x="390" y="534" text-anchor="middle" class="label">Nollaa pihti ennen asettamista johdon ympärille.</text>
+  <rect x="24" y="557" width="752" height="61" rx="12" fill="#172b28" stroke="#69bda6"/>
+  <text x="42" y="583" class="label">Tarvitset tasavirtaa mittaavan DC-virtapihdin.</text>
+  <text x="42" y="605" class="small">Varmista riittävä tarkkuus pienille virroille ja mittarin käyttöohje.</text>
+</svg>

@@ -25,3 +25,12 @@ database_id = "VAIHDA_D1_DATABASE_ID"
 # binding = "OPEN_DTC_DB"
 # database_name = "autosahkoapu-open-dtc"
 # database_id = "VAIHDA_TOISEN_D1_TIETOKANNAN_ID"
+
+# Saman aktivointikoodin pyynnöt ja käyttösaldo.
+[[durable_objects.bindings]]
+name = "ACCESS_GATE"
+class_name = "AccessGate"
+
+[[migrations]]
+tag = "v1-access-gate"
+new_sqlite_classes = ["AccessGate"]

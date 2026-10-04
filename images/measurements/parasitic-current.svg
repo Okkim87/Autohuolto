@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 680" role="img" aria-labelledby="title desc">
+  <title id="title">12 V akun lepovirtamittauksen sarjakytkentä</title>
+  <desc id="desc">Akun plusjohto pysyy kytkettynä autoon. Miinuskaapeli on irti akun miinusnavasta. Musta mittajohto COM-liitännästä menee akun miinusnapaan ja punainen mittajohto sulakkeella suojatusta A-liitännästä irrotettuun miinuskaapeliin. Yleismittari on tasavirtamittausasennossa ja sarjassa miinuspuolella.</desc>
+  <style>text{font-family:Arial,sans-serif;fill:#e6edf6;font-size:19px}.small{font-size:16px;fill:#aebed0}.label{font-weight:700}.wire{fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:7}</style>
+  <rect width="800" height="680" rx="22" fill="#0b121b"/>
+  <text x="30" y="42" class="label" font-size="25">Lepovirta: mittari sarjaan miinuspuolelle</text>
+  <text x="30" y="70" class="small">12 V järjestelmän kytkentäperiaate · ei korkeajännitteelle</text>
+  <path d="M135 175V115H665V175" class="wire" stroke="#f06a66"/>
+  <text x="400" y="105" text-anchor="middle" class="small">Pluskaapeli pysyy kytkettynä</text>
+  <rect x="70" y="175" width="220" height="135" rx="14" fill="#1a293a" stroke="#6a809b" stroke-width="2"/>
+  <rect x="121" y="163" width="28" height="20" rx="3" fill="#f06a66"/>
+  <rect x="231" y="163" width="28" height="20" rx="3" fill="#d4dfeb"/>
+  <text x="135" y="209" text-anchor="middle" class="label">+</text>
+  <text x="245" y="209" text-anchor="middle" class="label">−</text>
+  <text x="180" y="267" text-anchor="middle" class="label">12 V AKKU</text>
+  <rect x="555" y="175" width="180" height="135" rx="14" fill="#1a293a" stroke="#6a809b" stroke-width="2"/>
+  <text x="645" y="242" text-anchor="middle" class="label">AUTO</text>
+  <text x="645" y="270" text-anchor="middle" class="small">Sähköjärjestelmä</text>
+  <path d="M555 210H515" class="wire" stroke="#d4dfeb"/>
+  <circle cx="515" cy="210" r="9" fill="#0b121b" stroke="#d4dfeb" stroke-width="3"/>
+  <text x="430" y="251" text-anchor="middle" class="small">Irrotettu</text>
+  <text x="430" y="273" text-anchor="middle" class="small">miinuskaapeli</text>
+  <path d="M245 175V145H320V470H350" class="wire" stroke="#d4dfeb"/>
+  <path d="M515 210V330H495V470H450" class="wire" stroke="#f06a66"/>
+  <text x="235" y="364" text-anchor="middle" class="small">Musta johto</text>
+  <text x="605" y="363" text-anchor="middle" class="small">Punainen johto</text>
+  <rect x="340" y="315" width="120" height="185" rx="18" fill="#e5ac42"/>
+  <rect x="352" y="333" width="96" height="44" rx="6" fill="#172535"/>
+  <text x="400" y="362" text-anchor="middle" class="label">A DC</text>
+  <circle cx="400" cy="415" r="22" fill="#172535"/>
+  <path d="M400 415L412 400" stroke="#e6edf6" stroke-width="4"/>
+  <circle cx="350" cy="470" r="9" fill="#111" stroke="#d4dfeb" stroke-width="2"/>
+  <circle cx="450" cy="470" r="9" fill="#c53431" stroke="#f5d6d4" stroke-width="2"/>
+  <text x="350" y="527" text-anchor="middle" class="label">COM</text>
+  <text x="475" y="527" text-anchor="middle" class="label">A / 10 A*</text>
+  <text x="400" y="551" text-anchor="middle" class="small">* Tarkista liitäntä ja mittausrajat omasta mittarista.</text>
+  <rect x="24" y="575" width="752" height="84" rx="12" fill="#382019" stroke="#f78a58"/>
+  <text x="42" y="602" class="label">Älä käynnistä autoa tai käytä sähkölaitteita.</text>
+  <text x="42" y="626" class="small">Varmista sulakesuojaus sekä virta- ja aikarajat ennen kytkentää.</text>
+  <text x="42" y="649" class="small">Virtamittaria ei koskaan kytketä akun plus- ja miinusnavan väliin.</text>
+</svg>

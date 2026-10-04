@@ -365,6 +365,41 @@ function addTyping() {
   return id;
 }
 
+// Vain omat tarkistetut kuvat; AI ei voi antaa mielivaltaista kuvalinkkiä.
+function measurementIllustration(reply) {
+  if (reply?.blocked) return '';
+  const diagrams = {
+    'parasitic-current': {
+      title: 'Lepovirtamittarin sarjakytkentä',
+      alt: 'Yleismittari sarjassa akun miinuspuolella: musta COM-johto akun miinusnapaan, punainen A-johto irrotettuun miinuskaapeliin.',
+      note: '12 V kytkentäperiaate. Varmista sulakesuojattu virtaliitäntä sekä mittarin virta- ja aikarajat. Älä käynnistä autoa tai käytä sähkölaitteita mittarin ollessa sarjassa.'
+    },
+    'battery-voltage': {
+      title: 'Akun jännitemittarin kytkentä',
+      alt: 'Mittari V DC -asennossa. Punainen V-johto akun plusnapaan, musta COM-johto miinusnapaan. Akun omat kaapelit pysyvät paikallaan.',
+      note: '12 V kytkentäperiaate. Punainen mittajohto kuuluu V-liitäntään. Tarkista liitännät oman mittarin käyttöohjeesta.'
+    },
+    'dc-current-clamp': {
+      title: 'Lepovirtamittaus DC-virtapihdillä',
+      alt: 'Tasavirtaa mittaavan virtapihdin suljetut leuat yhden akun miinusjohtimen ympärillä. Akun kaapeleita ei irroteta.',
+      note: 'Nollaa DC-virtapihti ennen mittausta. Varmista riittävä tarkkuus pienille tasavirroille.'
+    }
+  };
+  const id = reply?.illustration;
+  if (!Object.hasOwn(diagrams, id)) return '';
+  const diagram = diagrams[id];
+  const path = '/images/measurements/' + id + '.svg';
+  return `<figure class="measurement-illustration">
+    <a href="${path}" target="_blank" rel="noopener" aria-label="${esc(diagram.title)}: avaa kuva suurempana">
+      <img src="${path}" alt="${esc(diagram.alt)}" width="800" height="${id === 'parasitic-current' ? 680 : 640}" loading="lazy">
+    </a>
+    <figcaption><strong>${esc(diagram.title)}</strong>
+      <p>${esc(diagram.note)}</p>
+      <a href="${path}" target="_blank" rel="noopener">Avaa kuva suurempana ↗</a>
+    </figcaption>
+  </figure>`;
+}
+
 // Mittausohje ja tavallinen keskusteluvastaus näytetään eri tavoin.
 function addAssistant(r, sources = []) {
   const sourceHtml = Array.isArray(sources) && sources.length
@@ -491,6 +526,8 @@ function addAssistant(r, sources = []) {
         ${r?.how
           ? `<p>${esc(r.how).replace(/\n/g, '<br>')}</p>`
           : ''}
+
+        ${measurementIllustration(r)}
 
         ${measurementHtml}
 
