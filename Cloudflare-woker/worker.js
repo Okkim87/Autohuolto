@@ -37,7 +37,7 @@ export default {
 
     try {
       if (url.pathname === '/activate') {
-        return await activate(request, env, headers);
+        return await routeAccessRequest(request, env, headers);
       }
 
       if (url.pathname === '/lookup') {
@@ -45,7 +45,7 @@ export default {
       }
 
       if (url.pathname === '/diagnose') {
-        return await diagnose(request, env, headers);
+        return await routeAccessRequest(request, env, headers);
       }
 
       if (url.pathname === '/admin/create-code') {
@@ -67,6 +67,69 @@ export default {
     }
   }
 };
+
+// ACCESS_GATE serialisoi saman koodin pyynnöt kaikilla Worker-instansseilla.
+// Lisää wrangler.toml-tiedostoon tämän toimituksen Durable Object -asetukset.
+async function routeAccessRequest(request, env, headers) {
+  if (!env.ACCESS_GATE) {
+    return json({ error: 'ACCESS_GATE Durable Object -sidonta puuttuu.' }, 503, headers);
+  }
+  let body;
+  try { body = await request.clone().json(); }
+  catch { return json({ error: 'Virheellinen JSON-pyyntö.' }, 400, headers); }
+  const code = cleanCode(body?.code);
+  if (!code || code.length > 100) {
+    return json({ error: 'Virheellinen aktivointikoodi.' }, 400, headers);
+  }
+  return env.ACCESS_GATE.get(env.ACCESS_GATE.idFromName(code)).fetch(request);
+}
+
+export class AccessGate {
+  constructor(state, env) {
+    this.state = state;
+    this.env = env;
+    this.queue = Promise.resolve();
+  }
+
+  fetch(request) {
+    const result = this.queue.then(() => this.handle(request));
+    this.queue = result.catch(() => {});
+    return result;
+  }
+
+  async handle(request) {
+    const headers = corsHeaders(request.headers.get('Origin') || '', this.env.ALLOWED_ORIGIN);
+    const storage = this.state.storage;
+    const kv = this.env.ACCESS_CODES;
+    // KV säilyttää hallintatiedot. Käyttösaldo tallennetaan vahvasti
+    // konsistenttiin Durable Object -tallennukseen ja peilataan KV:hen.
+    const env = {
+      ...this.env,
+      ACCESS_CODES: {
+        get: async (key) => {
+          const record = await kv.get(key, 'json');
+          if (!record) return null;
+          const usage = await storage.get(key);
+          return usage ? { ...record, ...usage } : record;
+        },
+        put: async (key, value) => {
+          const record = JSON.parse(value);
+          await storage.put(key, {
+            credits: record.credits,
+            used: record.used,
+            lastUsedAt: record.lastUsedAt
+          });
+          try { await kv.put(key, value); }
+          catch (error) { console.error('Käyttösaldon KV-peilaus epäonnistui', error); }
+        }
+      }
+    };
+    const path = new URL(request.url).pathname;
+    if (path === '/activate') return activate(request, env, headers);
+    if (path === '/diagnose') return diagnose(request, env, headers);
+    return json({ error: 'Not found' }, 404, headers);
+  }
+}
 
 function corsHeaders(origin, allowed) {
   const allow =
@@ -292,7 +355,9 @@ async function diagnose(request, env, headers) {
         {
           role: 'user',
           text: userMessage,
-          attachments: compactFiles
+          attachments: compactFiles,
+          caseData,
+          formCaseData: body.caseData || {}
         },
         {
           role: 'assistant',
@@ -303,6 +368,7 @@ async function diagnose(request, env, headers) {
       return json({
         reply,
         history: nextHistory,
+        caseData,
         access: {
           credits: rec.credits,
           remainingText: remainingText(rec)
@@ -395,8 +461,12 @@ async function diagnose(request, env, headers) {
       );
     }
 
+    if (raw.status && raw.status !== 'completed') {
+      throw new Error('AI-vastaus jäi kesken. Käyttöoikeutta ei vähennetä.');
+    }
     const responseText = extractText(raw);
     const reply = parseReply(responseText);
+    reply.illustration = selectIllustration(reply, caseData, history, userMessage);
 
     if (!reply.blocked) {
       rec.credits = Math.max(
@@ -418,7 +488,9 @@ async function diagnose(request, env, headers) {
       {
         role: 'user',
         text: userMessage,
-        attachments: compactFiles
+        attachments: compactFiles,
+        caseData,
+        formCaseData: body.caseData || {}
       },
       {
         role: 'assistant',
@@ -511,6 +583,29 @@ function prepareConversation(
   const history = Array.isArray(rawHistory)
     ? rawHistory.slice(-18)
     : [];
+
+  const previous = [...history].reverse().find(item =>
+    item?.role === 'user' && item.caseData && item.formCaseData
+  );
+  if (previous) {
+    const fields = ['car', 'make', 'model', 'year', 'engine', 'dtc', 'vin'];
+    const formChanged = fields.some(key =>
+      String(rawCase[key] || '').trim() !==
+      String(previous.formCaseData[key] || '').trim()
+    );
+    if (!formChanged) {
+      rawCase = { ...rawCase, ...previous.caseData, tools: rawCase.tools, mode: rawCase.mode };
+    } else if (fields.slice(0, 3).some(key =>
+      String(rawCase[key] || '').trim() !== String(previous.formCaseData[key] || '').trim()
+    )) {
+      // Lomakkeessa vaihdettu auto aloittaa myös uuden keskustelutapauksen.
+      return {
+        caseData: enrichCaseData(rawCase, [], userMessage),
+        history: [],
+        newCase: true
+      };
+    }
+  }
 
   const mentionedVehicle = findVehicleFromText(
     userMessage
@@ -867,15 +962,18 @@ function extractEngine(text = '') {
   const source = String(text);
 
   const size = source.match(
-    /\b([0-6][.,][0-9])\s*(?:l(?:itra(?:inen)?)?)?\b/i
+    /\b([0-6][.,][0-9])\s*(?:l(?:itra(?:inen)?)?\b|(?:tdci|tdi|tsi|tfsi|gdi|crdi|dci|hdi|bensa|bensiini|diesel)\b)/i
   );
 
   const fuel = source.match(
     /\b(bensa|bensiini|diesel|tdci|tdi|tsi|tfsi|gdi|crdi|dci|hdi|phev|hybrid|hybridi|sähkö|electric)\b/i
   );
 
-  if (size) {
-    const engineSize = size[1].replace(',', '.');
+  const contextualSize = size || source.match(
+    /(?:moottori|engine|iskutilavuus)\s*(?:on\s+)?([0-6][.,][0-9])\b/i
+  );
+  if (contextualSize) {
+    const engineSize = contextualSize[1].replace(',', '.');
     const fuelName = (fuel?.[1] || '').toLowerCase();
 
     return (
@@ -2123,50 +2221,77 @@ function extractText(raw) {
 }
 
 function parseReply(text) {
-  try {
-    const start = text.indexOf('{');
-    const end = text.lastIndexOf('}');
-
-    const object = JSON.parse(
-      text.slice(start, end + 1)
-    );
-
-    return {
-      blocked: object.blocked === true,
-      test:
-        object.test || 'Vastaus',
-      tool:
-        object.tool || '',
-      how:
-        object.how || '',
-      expected:
-        object.expected || '',
-      ifNormal:
-        object.ifNormal || '',
-      ifAbnormal:
-        object.ifAbnormal || '',
-      reason:
-        String(object.reason || '').trim(),
-      caution:
-        object.caution || ''
-    };
-
-  } catch {
-    return {
-      blocked: false,
-      test: 'AI-vastaus',
-      tool: '',
-      how:
-        text ||
-        'Vastausta ei saatu jäsennettyä.',
-      expected: '',
-      ifNormal: '',
-      ifAbnormal: '',
-      reason: '',
-      caution:
-        'Jos vastaus jäi kesken, pyydä tarkennusta ennen mittaamista.'
-    };
+  if (typeof text !== 'string' || !text.trim()) {
+    throw new Error('AI-vastaus on tyhjä.');
   }
+  const start = text.indexOf('{');
+  const end = text.lastIndexOf('}');
+  if (start < 0 || end < start) throw new Error('AI-vastaus ei ole JSON-muotoinen.');
+  const object = JSON.parse(text.slice(start, end + 1));
+  if (!object || Array.isArray(object) || typeof object !== 'object' ||
+      typeof object.how !== 'string' || !object.how.trim()) {
+    throw new Error('AI-vastauksen sisältö puuttuu.');
+  }
+  if (object.blocked !== undefined && typeof object.blocked !== 'boolean') {
+    throw new Error('AI-vastauksen blocked-kenttä on virheellinen.');
+  }
+  const reply = { blocked: object.blocked === true };
+  for (const key of ['test', 'tool', 'how', 'expected', 'ifNormal', 'ifAbnormal', 'reason', 'caution']) {
+    if (object[key] !== undefined && typeof object[key] !== 'string') {
+      throw new Error('AI-vastauksen kenttä on virheellinen: ' + key);
+    }
+    reply[key] = (object[key] || '').trim();
+  }
+  const supported = ['parasitic-current', 'battery-voltage', 'dc-current-clamp'];
+  reply.illustration = supported.includes(object.illustration) ? object.illustration : '';
+  reply.test ||= 'Vastaus';
+  return reply;
+}
+
+// Sarjakytkentäkuva vaatii käyttäjän vahvistaman virtaliitännän ja sulakesuojauksen.
+function currentMeterSetupConfirmed(history = [], userMessage = '') {
+  let confirmed = false;
+  let previousReply = '';
+  const port = /(?:\b10\s*a\b|a\s*\/\s*10\s*a|a-liit[aä]nt|virtaliit[aä]nt)/i;
+  const fuse = /sulakesuoj|sulakkeella\s+suoj|sulake/i;
+  const yes = /^(?:kyllä|joo|juu|on|löytyy|löytyy kyllä|kyllä löytyy|ok|onnistuu)[.!]?$/i;
+  for (const item of [...history, { role: 'user', text: userMessage }]) {
+    if (item?.role === 'assistant') {
+      previousReply = String(item.reply?.how || '');
+      continue;
+    }
+    if (item?.role !== 'user') continue;
+    const text = String(item.text || '').trim();
+    if (port.test(previousReply) && fuse.test(previousReply) && previousReply.includes('?')) {
+      if (yes.test(text)) confirmed = true;
+      else if (/^(?:ei|ei ole|ei löydy|en tiedä)[.!]?$/i.test(text)) confirmed = false;
+    }
+    if (port.test(text) && fuse.test(text)) {
+      confirmed = !/(?:\?|\bei\b|en tiedä|ehkä)/i.test(text);
+    } else if (/(?:\bei\b|puuttuu|rikki|palanut)/i.test(text) && fuse.test(text)) {
+      confirmed = false;
+    }
+    previousReply = '';
+  }
+  return confirmed;
+}
+
+function selectIllustration(reply, caseData, history, userMessage) {
+  if (reply.blocked || !reply.tool || reply.how.includes('?') ||
+      isHighVoltageTopic(caseData, userMessage)) return '';
+  const text = [reply.test, reply.tool, reply.how].join(' ');
+  if (reply.illustration === 'parasitic-current') {
+    return /yleismittar/i.test(text) && /sarja/i.test(reply.how) &&
+      currentMeterSetupConfirmed(history, userMessage) ? reply.illustration : '';
+  }
+  if (reply.illustration === 'battery-voltage') {
+    return /yleismittar/i.test(text) && /akku|akun/i.test(text) &&
+      /jännite|jännitteen|tasajänn/i.test(text) ? reply.illustration : '';
+  }
+  if (reply.illustration === 'dc-current-clamp') {
+    return /virtapih/i.test(text) && /(?:\bdc\b|tasavir)/i.test(text) ? reply.illustration : '';
+  }
+  return '';
 }
 
 // Varsinainen keskustelu- ja diagnostiikkaohjeistus.
@@ -2309,8 +2434,32 @@ ifNormal
 ifAbnormal
 reason
 caution
+illustration
 
 Normaalisti blocked=false.
+
+HAVAINNEKUVAN VALINTA
+
+illustration on yksi seuraavista tunnuksista tai tyhjä merkkijono:
+- "parasitic-current": 12 V akun lepovirtamittaus yleismittarilla SARJASSA
+  akun miinuspuolella. Musta COM-johto akun miinusnapaan ja punainen
+  sulakesuojatun A/10 A -liitännän johto irrotettuun miinuskaapeliin.
+  Valitse vain tämän kytkentäohjeen yhteydessä, kun käyttäjä on vahvistanut
+  sekä virtaliitännän että sulakesuojauksen. Varmista mittarin virta- ja
+  aikarajat sekä ajoneuvon valmisteluohje. Huomioi irrotuksen aiheuttama
+  herääminen ja kytkentävirtapiikki. Jos sopivuus on epäselvä, kysy ensin.
+- "battery-voltage": 12 V akun JÄNNITTEEN mittaus yleismittarilla V DC.
+  Punainen V/Ω-johto plusnapaan, musta COM-johto miinusnapaan.
+  Akun omat kaapelit jäävät paikalleen.
+- "dc-current-clamp": akun TASAVIRRAN mittaus DC-virtapihdillä yhden
+  akun johtimen ympäriltä. Kaapeleita ei irroteta. Nollaus ennen mittausta.
+  Varmista DC-mittaus ja riittävä tarkkuus pienille virroille.
+- "": muu mittaus, keskustelu, tulkinta tai tarkentava kysymys.
+
+Tekstin kytkennän on vastattava kuvan kytkentää. Älä valitse kuvaa
+pelkän aiheen perusteella tai työkalua kysyttäessä. Korkeajänniterajauksessa
+illustration on aina tyhjä. Älä keksi kuvatunnuksia, kuvalinkkejä tai
+ajoneuvokohtaisia kytkentäkaavioita. Kuvan värit tarkoittavat mittajohtoja.
 
 KENTTIEN MERKITYS
 
