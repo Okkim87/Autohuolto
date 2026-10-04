@@ -1,4 +1,3 @@
-
 const PLAN = {
   single: {
     label: '1 diagnoosi',
@@ -236,7 +235,10 @@ async function lookup(request, env, headers) {
   );
 
   const context = await getTechnicalContext(
-    prepared.caseData,
+    {
+      ...prepared.caseData,
+      obdbQuery: body.userMessage || ''
+    },
     env
   );
 
@@ -309,8 +311,20 @@ async function diagnose(request, env, headers) {
       }, 200, headers);
     }
 
+    const shortAck = /^(?:kyllä|joo|juu|on|löytyy|löytyy kyllä|kyllä löytyy|ok|onnistuu|pystyn|voi|ei|ei ole|ei löydy|eipä ole|ei onnistu|en pysty|ei käy)$/i
+      .test(userMessage.trim());
+
     const technicalContext =
-      await getTechnicalContext(caseData, env);
+      await getTechnicalContext(
+        {
+          ...caseData,
+          // Lyhyt myöntävä/kieltävä vastaus ei ole uusi diagnostinen OBDb-hakukysely.
+          // Käytä tyhjää hakutekstiä, jotta "on"/"löytyy" ei tuota geneeristä
+          // 12 signaalin fallbackia lähdeyhteenvetoon.
+          obdbQuery: shortAck ? '' : userMessage
+        },
+        env
+      );
 
     const prompt = buildPrompt(
       caseData,
@@ -934,7 +948,7 @@ async function getTechnicalContext(c, env) {
   ] = await Promise.all([
     decodeVin(c.vin, c.year),
     lookupDtcs(c.dtc, env),
-    lookupObdex(c.dtc)
+    lookupObdex(c.dtc, env)
   ]);
 
   const [
@@ -942,9 +956,9 @@ async function getTechnicalContext(c, env) {
     wal33d,
     obdexPids
   ] = await Promise.all([
-    lookupObdbSignals(c, vehicle),
+    lookupObdbSignals(c, vehicle, env),
     lookupWal33d(c.dtc, env),
-    lookupObdexPids(c, obdex)
+    lookupObdexPids(c, obdex, env)
   ]);
 
   return {
@@ -1111,120 +1125,118 @@ async function lookupDtcs(raw, env) {
   return output;
 }
 
-// OBDex: geneeriset vikakoodit.
-
-async function lookupObdex(raw) {
+// OBDex: geneeriset vikakoodit D1-kannasta.
+async function lookupObdex(raw, env) {
   const codes = parseDtcCodes(raw);
+  if (!codes.length) return [];
 
-  if (!codes.length) {
-    return [];
-  }
-
-  try {
-    const cache = caches.default;
-
-    const request = new Request(
-      'https://foerbsnavi.github.io/obdex/generic.min.json',
-      {
-        headers: {
-          Accept: 'application/json'
-        }
-      }
-    );
-
-    let response = await cache.match(request);
-
-    if (!response) {
-      const live = await fetch(request);
-
-      if (!live.ok) {
-        throw new Error(
-          `OBDex HTTP ${live.status}`
-        );
-      }
-
-      response = new Response(
-        live.body,
-        live
-      );
-
-      response.headers.set(
-        'Cache-Control',
-        'public, max-age=86400'
-      );
-
-      await cache.put(
-        request,
-        response.clone()
-      );
-    }
-
-    const all = await response.json();
-    const wanted = new Set(codes);
-
-    return all
-      .filter(row =>
-        wanted.has(
-          String(row.code || '').toUpperCase()
-        )
-      )
-      .slice(0, 12)
-      .map(row => ({
-        source: 'OBDex',
-        code: row.code,
-        category: row.category,
-        title: row?.title?.en || '',
-        description:
-          row?.description?.en || '',
-        affectedComponents:
-          Array.isArray(row.affected_components)
-            ? row.affected_components.slice(0, 8)
-            : [],
-        commonCauses:
-          Array.isArray(row.common_causes)
-            ? row.common_causes.slice(0, 8)
-            : [],
-        symptoms:
-          Array.isArray(row.symptoms)
-            ? row.symptoms.slice(0, 8)
-            : [],
-        relatedCodes:
-          Array.isArray(row.related_codes)
-            ? row.related_codes.slice(0, 8)
-            : [],
-        available: true
-      }));
-
-  } catch (e) {
-    console.error('OBDex', e);
-
+  if (!env.AUTODIAG_DB) {
     return codes.map(code => ({
       source: 'OBDex',
       code,
       available: false,
-      note: 'OBDex-haku epäonnistui'
+      note: 'OBDex D1 -sidonta puuttuu'
+    }));
+  }
+
+  const out = [];
+
+  try {
+    for (const code of codes.slice(0, 12)) {
+      const row = await env.AUTODIAG_DB
+        .prepare(`
+          SELECT
+            code, category,
+            title_en, description_en,
+            affected_components,
+            common_causes,
+            symptoms,
+            repair_difficulty,
+            repair_diy_possible,
+            estimated_cost_eur,
+            estimated_hours,
+            mil,
+            emissions_relevant,
+            references_json,
+            sources_json
+          FROM obdex_dtc
+          WHERE upper(code) = upper(?)
+          LIMIT 1
+        `)
+        .bind(code)
+        .first();
+
+      if (!row) {
+        out.push({
+          source: 'OBDex',
+          sourceStore: 'D1',
+          code,
+          available: false,
+          note: 'Koodia ei löytynyt OBDexin geneerisestä aineistosta'
+        });
+        continue;
+      }
+
+      const parseJson = (value, fallback = []) => {
+        if (!value) return fallback;
+        try { return JSON.parse(value); }
+        catch { return fallback; }
+      };
+
+      out.push({
+        source: 'OBDex',
+        sourceStore: 'D1',
+        code: row.code,
+        category: row.category || '',
+        title: row.title_en || '',
+        description: row.description_en || '',
+        affectedComponents: parseJson(row.affected_components).slice(0, 8),
+        commonCauses: parseJson(row.common_causes).slice(0, 8),
+        symptoms: parseJson(row.symptoms).slice(0, 8),
+        repair: {
+          difficulty: row.repair_difficulty || '',
+          diyPossible:
+            row.repair_diy_possible == null
+              ? null
+              : Boolean(row.repair_diy_possible),
+          estimatedCostEur: parseJson(row.estimated_cost_eur),
+          estimatedHours: parseJson(row.estimated_hours)
+        },
+        flags: {
+          mil: row.mil == null ? null : Boolean(row.mil),
+          emissionsRelevant:
+            row.emissions_relevant == null
+              ? null
+              : Boolean(row.emissions_relevant)
+        },
+        references: parseJson(row.references_json),
+        sourceLinks: parseJson(row.sources_json),
+        available: true
+      });
+    }
+
+    return out;
+  } catch (e) {
+    console.error('OBDex D1', e);
+    return codes.map(code => ({
+      source: 'OBDex',
+      sourceStore: 'D1',
+      code,
+      available: false,
+      note: 'OBDex D1 -haku epäonnistui',
+      error: String(e?.message || e).slice(0, 300)
     }));
   }
 }
 
-// OBDex: yleiset OBD-mittausparametrit.
+// OBDex: yleiset SAE OBD-II Mode 01 -mittausparametrit D1-kannasta.
+async function lookupObdexPids(c, obdexRows = [], env) {
+  if (!env.AUTODIAG_DB) return [];
 
-async function lookupObdexPids(
-  c,
-  obdexRows = []
-) {
   const rawTerms = [];
-
   for (const row of obdexRows || []) {
-    rawTerms.push(
-      row?.title || '',
-      row?.description || ''
-    );
-
-    for (
-      const component of
-      row?.affectedComponents || []
-    ) {
+    rawTerms.push(row?.title || '', row?.description || '');
+    for (const component of row?.affectedComponents || []) {
       rawTerms.push(
         typeof component === 'string'
           ? component
@@ -1235,184 +1247,116 @@ async function lookupObdexPids(
 
   rawTerms.push(
     c?.dtc || '',
-    c?.car || '',
-    c?.engine || ''
+    c?.symptom || '',
+    c?.description || '',
+    c?.obdbQuery || ''
   );
 
   const aliases = {
-    maf: [
-      'maf',
-      'mass air',
-      'air flow',
-      'ilmamäär'
-    ],
-    map: [
-      'map',
-      'manifold',
-      'intake pressure'
-    ],
-    fuel: [
-      'fuel',
-      'lambda',
-      'oxygen',
-      'o2',
-      'trim',
-      'seos',
-      'polttoaine'
-    ],
-    coolant: [
-      'coolant',
-      'temperature',
-      'ect',
-      'jäähdytys'
-    ],
-    throttle: [
-      'throttle',
-      'tps',
-      'kaasuläpp'
-    ],
-    rpm: [
-      'rpm',
-      'engine speed',
-      'kierros'
-    ],
-    speed: [
-      'vehicle speed',
-      'vss',
-      'nopeus'
-    ],
-    voltage: [
-      'voltage',
-      'battery',
-      'control module voltage',
-      'jännite'
-    ]
+    maf: ['maf', 'mass airflow', 'mass air flow', 'air flow rate', 'ilmamäär', 'ilmamaara'],
+    map: ['map', 'manifold absolute pressure', 'intake manifold pressure'],
+    fuel: ['fuel trim', 'lambda', 'oxygen sensor', 'o2 sensor', 'seos', 'polttoaine'],
+    coolant: ['coolant', 'ect', 'engine coolant', 'jäähdytysneste', 'jaahdytysneste'],
+    throttle: ['throttle', 'tps', 'kaasuläpp', 'kaasulapp'],
+    rpm: ['rpm', 'engine speed', 'kierros'],
+    speed: ['vehicle speed', 'vss', 'nopeus'],
+    voltage: ['control module voltage', 'battery voltage', 'jännite', 'jannite']
   };
 
-  const hay = rawTerms
-    .join(' ')
-    .toLowerCase();
+  const hay = rawTerms.join(' ').toLowerCase();
+  const wanted = new Set();
 
-  const wanted = [];
+  const addGroup = key => {
+    wanted.add(key);
+    for (const word of aliases[key] || []) wanted.add(word);
+  };
 
-  for (
-    const [key, words] of
-    Object.entries(aliases)
-  ) {
-    if (
-      words.some(word => hay.includes(word))
-    ) {
-      wanted.push(...words, key);
-    }
+  for (const [key, words] of Object.entries(aliases)) {
+    if (words.some(word => hay.includes(word))) addGroup(key);
   }
 
-  if (!wanted.length) {
-    wanted.push(
-      'rpm',
-      'engine speed',
-      'load',
-      'coolant',
-      'maf',
-      'map',
-      'fuel trim',
-      'oxygen',
-      'voltage'
-    );
+  for (const code of parseDtcCodes(c?.dtc || '')) {
+    if (/^P010[0-4]$/.test(code)) addGroup('maf');
+    else if (/^P017[124]$/.test(code)) {
+      addGroup('fuel');
+      addGroup('maf');
+      addGroup('map');
+    } else if (/^P011[5-9]$/.test(code)) addGroup('coolant');
+    else if (/^P012[0-4]$/.test(code)) addGroup('throttle');
+  }
+
+  // Älä tarjoa geneerisiä Mode 01 -PID-arvoja vain siksi, että niitä on
+  // tietokannassa. Jos oire, DTC tai kysymys ei osoita mihinkään OBD:llä
+  // hyödyllisesti mitattavaan suureeseen, OBDex PID -data jätetään pois.
+  //
+  // Tämä estää esimerkiksi akun yön aikana tyhjenemisen, valovian tai muun
+  // korin sähkövian yhteydessä satunnaisten RPM/ECT/MAF/MAP/PID-arvojen
+  // näyttämisen "relevantteina".
+  if (!wanted.size) {
+    return [];
   }
 
   try {
-    const url =
-      'https://foerbsnavi.github.io/obdex/pids/mode01.json';
-
-    const cache = caches.default;
-
-    const request = new Request(
-      url,
-      {
-        headers: {
-          Accept: 'application/json'
-        }
-      }
-    );
-
-    let response = await cache.match(request);
-
-    if (!response) {
-      const live = await fetch(request);
-
-      if (!live.ok) {
-        throw new Error(
-          `OBDex PID HTTP ${live.status}`
-        );
-      }
-
-      response = new Response(
-        live.body,
-        live
-      );
-
-      response.headers.set(
-        'Cache-Control',
-        'public, max-age=86400'
-      );
-
-      await cache.put(
-        request,
-        response.clone()
-      );
-    }
-
-    const data = await response.json();
-
-    const list = Array.isArray(data)
-      ? data
-      : (
-        data?.pids ||
-        data?.data ||
-        []
-      );
+    const rows = await env.AUTODIAG_DB
+      .prepare(`
+        SELECT mode, pid, bytes, unit, name_en, name_de,
+               formula, min_value, max_value,
+               description_en, description_de, raw_json
+        FROM obdex_pid
+        WHERE mode = '01'
+        ORDER BY pid
+      `)
+      .all();
 
     const scored = [];
+    for (const row of rows?.results || []) {
+      let raw = {};
+      try { raw = row.raw_json ? JSON.parse(row.raw_json) : {}; }
+      catch { raw = {}; }
 
-    for (const pid of list) {
-      const text = JSON.stringify(
-        pid
-      ).toLowerCase();
+      const text = [
+        row.name_en, row.description_en, row.unit,
+        row.formula, JSON.stringify(raw)
+      ].filter(Boolean).join(' ').toLowerCase();
 
       let score = 0;
-
-      for (const word of wanted) {
-        if (
-          text.includes(
-            String(word).toLowerCase()
-          )
-        ) {
-          score++;
-        }
+      for (const term of wanted) {
+        const t = String(term).toLowerCase();
+        if (!t) continue;
+        if (text.includes(t)) score += t.length >= 5 ? 4 : 2;
       }
 
-      if (score > 0) {
-        scored.push({
-          score,
-          pid
-        });
-      }
+      if (score > 0) scored.push({ score, row, raw });
     }
 
-    scored.sort(
-      (a, b) => b.score - a.score
-    );
+    scored.sort((a, b) => b.score - a.score || String(a.row.pid).localeCompare(String(b.row.pid)));
 
-    return scored
-      .slice(0, 18)
-      .map(item => ({
-        source: 'OBDex PID',
-        available: true,
-        ...item.pid
-      }));
-
+    return scored.slice(0, 18).map(({ score, row, raw }) => ({
+      source: 'OBDex PID',
+      sourceStore: 'D1',
+      available: true,
+      mode: row.mode,
+      pid: row.pid,
+      bytes: row.bytes,
+      unit: row.unit || '',
+      name: row.name_en || '',
+      description: row.description_en || '',
+      formula: row.formula || raw?.formula || '',
+      min: row.min_value,
+      max: row.max_value,
+      relevanceScore: score,
+      ...raw,
+      // D1:n normalisoidut arvot pidetään määräävinä.
+      mode: row.mode,
+      pid: row.pid,
+      name: row.name_en || raw?.name?.en || '',
+      source: 'OBDex PID',
+      sourceStore: 'D1',
+      available: true,
+      relevanceScore: score
+    }));
   } catch (e) {
-    console.error('OBDex PID', e);
+    console.error('OBDex PID D1', e);
     return [];
   }
 }
@@ -1437,146 +1381,519 @@ function isHvSignalText(value = '') {
   );
 }
 
-async function lookupObdbSignals(c, vehicle) {
-  const make = slugPart(
+async function lookupObdbSignals(c, vehicle, env) {
+  if (!env.AUTODIAG_DB) {
+    return {
+      source: 'OBDb',
+      available: false,
+      note: 'OBDb D1 -sidonta puuttuu'
+    };
+  }
+
+  const rawMake = String(
     c.make ||
     c.car?.split(/\s+/)?.[0] ||
     vehicle?.make ||
     ''
-  );
-
-  let model = slugPart(
-    c.model || ''
-  );
-
-  const car = String(
-    c.car || ''
   ).trim();
 
-  if (!model && car && make) {
-    model = slugPart(
-      car.replace(
+  let rawModel = String(c.model || '').trim();
+  const car = String(c.car || '').trim();
+
+  if (!rawModel && car && rawMake) {
+    rawModel = car
+      .replace(
         new RegExp(
-          '^' +
-          make.replace(/-/g, '[ -]?'),
+          '^' + escapeRe(rawMake) + '\\s*',
           'i'
         ),
         ''
-      ).trim()
-    );
+      )
+      .trim();
   }
 
-  if (!model) {
-    model = slugPart(
-      vehicle?.model || ''
-    );
+  if (!rawModel) {
+    rawModel = String(vehicle?.model || '').trim();
   }
 
-  if (!make || !model) {
+  if (!rawMake) {
     return {
       source: 'OBDb',
       available: false,
-      note: 'Merkki/malli puuttuu'
+      note: 'Ajoneuvon merkki puuttuu'
     };
   }
 
-  const repo = `${make}-${model}`;
+  const norm = value =>
+    String(value || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '');
 
-  const urls = [
-    `https://raw.githubusercontent.com/OBDb/${encodeURIComponent(repo)}/main/signalsets/v3/default.json`,
-    `https://raw.githubusercontent.com/OBDb/${encodeURIComponent(repo)}/master/signalsets/v3/default.json`
-  ];
+  const makeNorm = norm(rawMake);
+  const modelNorm = norm(rawModel);
 
-  for (const url of urls) {
-    try {
-      const response = await fetch(
-        url,
-        {
-          headers: {
-            Accept: 'application/json',
-            'User-Agent':
-              'AutosahkoapuAI/1.0'
-          }
-        }
+  const year = Number.parseInt(
+    String(
+      c.year ||
+      vehicle?.modelYear ||
+      ''
+    ).replace(/[^0-9]/g, '').slice(0, 4),
+    10
+  );
+
+  try {
+    const vehicleRows = await env.AUTODIAG_DB
+      .prepare(`
+        SELECT id, make, model, repo, source_url
+        FROM obdb_vehicle
+        WHERE lower(make) = lower(?)
+           OR lower(repo) = lower(?)
+           OR lower(repo) LIKE lower(?)
+        ORDER BY repo
+        LIMIT 120
+      `)
+      .bind(
+        rawMake,
+        rawMake,
+        `${rawMake}-%`
+      )
+      .all();
+
+    const candidates = (vehicleRows?.results || [])
+      .map(row => ({
+        ...row,
+        makeNorm: norm(row.make),
+        modelNorm: norm(row.model),
+        repoNorm: norm(row.repo)
+      }))
+      .filter(row =>
+        row.makeNorm === makeNorm ||
+        row.repoNorm === makeNorm ||
+        row.repoNorm.startsWith(makeNorm)
       );
 
-      if (!response.ok) {
+    let modelRepo = null;
+
+    if (modelNorm) {
+      modelRepo =
+        candidates.find(row =>
+          row.modelNorm === modelNorm
+        ) ||
+        candidates.find(row =>
+          row.repoNorm === makeNorm + modelNorm
+        ) ||
+        null;
+    }
+
+    const makeRepo =
+      candidates.find(row =>
+        !row.modelNorm &&
+        row.repoNorm === makeNorm
+      ) ||
+      candidates.find(row =>
+        row.repoNorm === makeNorm
+      ) ||
+      null;
+
+    const selectedRepos = [];
+
+    // Mallikohtainen aineisto ensin.
+    if (modelRepo) {
+      selectedRepos.push({
+        ...modelRepo,
+        priority: 0,
+        matchType: 'model'
+      });
+    }
+
+    // Valmistajatason aineisto otetaan mukaan myös silloin,
+    // kun mallirepo löytyy. Näin yhteiset Ford/BMW/Toyota jne.
+    // signaalit eivät katoa mallikohtaisen repon vuoksi.
+    if (
+      makeRepo &&
+      (!modelRepo || makeRepo.id !== modelRepo.id)
+    ) {
+      selectedRepos.push({
+        ...makeRepo,
+        priority: 1,
+        matchType: modelRepo
+          ? 'make-common'
+          : 'make-fallback'
+      });
+    }
+
+    if (!selectedRepos.length) {
+      return {
+        source: 'OBDb',
+        available: false,
+        requestedMake: rawMake,
+        requestedModel: rawModel,
+        note:
+          'OBDb D1:stä ei löytynyt mallikohtaista eikä valmistajatason aineistoa'
+      };
+    }
+
+    const allSignals = [];
+
+    for (const repo of selectedRepos) {
+      const params = [repo.id];
+      let yearClause = '';
+
+      if (
+        Number.isFinite(year) &&
+        year >= 1900 &&
+        year <= 2100
+      ) {
+        yearClause = `
+          AND (
+            (ss.year_from IS NULL AND ss.year_to IS NULL)
+            OR
+            (
+              (ss.year_from IS NULL OR ss.year_from <= ?)
+              AND
+              (ss.year_to IS NULL OR ss.year_to >= ?)
+            )
+          )
+        `;
+        params.push(year, year);
+      }
+
+      const rows = await env.AUTODIAG_DB
+        .prepare(`
+          SELECT
+            ss.config_name,
+            ss.year_from,
+            ss.year_to,
+            ss.source_file,
+
+            s.signal_id,
+            s.signal_name,
+            s.signal_path,
+            s.description,
+
+            s.header,
+            s.response_address,
+            s.service,
+            s.command,
+            s.frequency,
+
+            s.bit_index,
+            s.bit_length,
+            s.multiplier,
+            s.divisor,
+            s.offset_value,
+            s.min_value,
+            s.max_value,
+            s.unit,
+            s.suggested_metric,
+            s.debug
+
+          FROM obdb_signal AS s
+          JOIN obdb_signalset AS ss
+            ON ss.id = s.signalset_id
+
+          WHERE ss.vehicle_id = ?
+          ${yearClause}
+
+          ORDER BY
+            ss.config_name,
+            s.id
+
+          LIMIT 1200
+        `)
+        .bind(...params)
+        .all();
+
+      for (const row of rows?.results || []) {
+        allSignals.push({
+          ...row,
+          repo: repo.repo,
+          source_url: repo.source_url,
+          repoPriority: repo.priority,
+          matchType: repo.matchType
+        });
+      }
+    }
+
+    if (!allSignals.length) {
+      return {
+        source: 'OBDb',
+        available: false,
+        repos: selectedRepos.map(x => x.repo),
+        requestedMake: rawMake,
+        requestedModel: rawModel,
+        year:
+          Number.isFinite(year) ? year : null,
+        note:
+          'OBDb-repo löytyi, mutta sille ei löytynyt signaalidataa'
+      };
+    }
+
+    const safeSignals = allSignals.filter(row => {
+      const signalText = [
+        row.signal_id,
+        row.signal_name,
+        row.signal_path,
+        row.description
+      ]
+        .filter(Boolean)
+        .join(' ');
+
+      return !isHvSignalText(signalText);
+    });
+
+    // Poista mallirepon ja valmistajarepon mahdolliset duplikaatit.
+    // Mallikohtainen rivi voittaa, koska se lisättiin ensin.
+    const uniqueSignals = [];
+    const seen = new Set();
+
+    for (const row of safeSignals.sort(
+      (a, b) => a.repoPriority - b.repoPriority
+    )) {
+      const key = [
+        norm(row.signal_id),
+        norm(row.header),
+        norm(row.service),
+        norm(row.command)
+      ].join('|');
+
+      if (seen.has(key)) {
         continue;
       }
 
-      const data = await response.json();
-      const signals = [];
+      seen.add(key);
+      uniqueSignals.push(row);
+    }
 
-      for (
-        const command of data?.commands || []
-      ) {
-        for (
-          const signal of command?.signals || []
-        ) {
-          const text = [
-            signal.id,
-            signal.name,
-            signal.description,
-            signal.path
-          ]
-            .filter(Boolean)
-            .join(' ');
+    // Relevanssi perustuu varsinaiseen oireeseen/kysymykseen, ei auton
+    // merkkiin, malliin tai vuosilukuun. Aiemmin esim. sana "Volkswagen"
+    // osui jokaiseen VOLKSWAGEN_* signaaliin ja nosti renkaat/ulkolämpötilan
+    // P0101-haun kärkeen.
+    const rawQuery = [
+      c.obdbQuery,
+      c.symptom,
+      c.description
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
 
-          if (isHvSignalText(text)) {
-            continue;
-          }
+    const queryAliases = {
+      odometer: ['matkamittari','odometer','odo','mileage','kilometrilukema'],
+      coolant: ['jäähdytysneste','jaahdytysneste','coolant','ect','engine coolant'],
+      temperature: ['lämpötila','lampotila','temperature','temp'],
+      throttle: ['kaasuläppä','kaasulappa','throttle','tps'],
+      rpm: ['kierros','kierrosluku','rpm','engine speed'],
+      speed: ['nopeus','vehicle speed','wheel speed','vss'],
+      fuel: ['polttoaine','fuel','lambda','oxygen','o2','trim','seos'],
+      pressure: ['paine','pressure','map','boost'],
+      air: ['ilmamäärä','ilmamaara','airflow','air flow','maf','mass airflow','mass air flow','air mass'],
+      voltage: ['jännite','jannite','voltage'],
+      steering: ['ohjauskulma','ratin kulma','steering angle'],
+      tire: ['rengaspaine','tpms','tire pressure']
+    };
 
-          signals.push({
-            id: signal.id || '',
-            name: signal.name || '',
-            description:
-              signal.description || '',
-            path: signal.path || '',
-            unit: signal?.fmt?.unit || '',
-            min: signal?.fmt?.min,
-            max: signal?.fmt?.max,
-            optimalMin:
-              signal?.fmt?.omin,
-            optimalMax:
-              signal?.fmt?.omax,
-            optimalValue:
-              signal?.fmt?.oval
-          });
+    const wanted = new Set();
+    const addAliasGroup = key => {
+      const aliases = queryAliases[key] || [];
+      wanted.add(key);
+      for (const alias of aliases) wanted.add(alias);
+    };
 
-          if (signals.length >= 80) {
-            break;
-          }
-        }
+    for (const [key, aliases] of Object.entries(queryAliases)) {
+      if (aliases.some(alias => rawQuery.includes(alias))) {
+        addAliasGroup(key);
+      }
+    }
 
-        if (signals.length >= 80) {
-          break;
-        }
+    // DTC antaa tarvittaessa diagnostisen vihjeen signaalivalintaan.
+    // Tämä ei väitä komponenttia vialliseksi, vaan auttaa löytämään
+    // mittaukseen liittyvät OBDb-signaalit.
+    const dtcCodes = parseDtcCodes(c.dtc || '');
+    for (const code of dtcCodes) {
+      if (/^P010[0-4]$/.test(code)) {
+        addAliasGroup('air');
+      } else if (/^P017[124]$/.test(code)) {
+        addAliasGroup('fuel');
+        addAliasGroup('air');
+        addAliasGroup('pressure');
+      } else if (/^P011[5-9]$/.test(code)) {
+        addAliasGroup('coolant');
+        addAliasGroup('temperature');
+      } else if (/^P012[0-4]$/.test(code)) {
+        addAliasGroup('throttle');
+      }
+    }
+
+    // Käyttäjän vapaat sanat vain oire-/kysymystekstistä. Poistetaan sanat,
+    // jotka ovat lähes aina diagnostisesti hyödyttömiä tai ajoneuvoidentiteettiä.
+    const stopWords = new Set([
+      'auto','auton','vehicle','engine','moottori','vikakoodi','koodi','dtc',
+      'mistä','mista','aloitan','vianhaun','haluan','lukea','arvo','arvot',
+      'minulla','lukija','obd','obd2','elm327','bensa','bensiini','diesel',
+      String(rawMake || '').toLowerCase(),
+      String(rawModel || '').toLowerCase(),
+      String(c.year || '').toLowerCase(),
+      String(c.engine || '').toLowerCase()
+    ].filter(Boolean));
+
+    for (const word of rawQuery
+      .replace(/[^a-z0-9åäö\-_. ]/gi, ' ')
+      .split(/\s+/)) {
+      const w = word.toLowerCase();
+      if (w.length >= 4 && !stopWords.has(w) && !/^p[0-9a-f]{4}$/i.test(w)) {
+        wanted.add(w);
+      }
+    }
+
+    const scoreSignal = row => {
+      const idName = [row.signal_id, row.signal_name, row.suggested_metric]
+        .filter(Boolean).join(' ').toLowerCase();
+      const contextText = [row.signal_path, row.description, row.unit]
+        .filter(Boolean).join(' ').toLowerCase();
+
+      let score = 0;
+      for (const term of wanted) {
+        const t = String(term).toLowerCase();
+        if (!t) continue;
+        if (idName.includes(t)) score += t.length >= 5 ? 6 : 4;
+        else if (contextText.includes(t)) score += t.length >= 5 ? 3 : 2;
       }
 
+      // P0100-P0104: estä ilmastoinnin/korin yleisten "air"-signaalien
+      // päätyminen MAF-haun kärkeen pelkän sanan air vuoksi.
+      if (dtcCodes.some(code => /^P010[0-4]$/.test(code))) {
+        const negative = [
+          'climate', 'interior', 'cabin', 'ambient', 'outside temperature',
+          'recirculation', 'air pollution', 'a/c', 'ac compressor',
+          'air conditioning', 'hvac', 'flap'
+        ];
+        const fullText = (idName + ' ' + contextText).toLowerCase();
+        if (negative.some(term => fullText.includes(term))) score -= 20;
+
+        const mafPositive = [
+          'maf', 'mass airflow', 'mass air flow', 'air mass',
+          'airflow meter', 'air flow meter', 'mass airflow sensor'
+        ];
+        if (mafPositive.some(term => fullText.includes(term))) score += 10;
+      }
+
+      // Mallikohtaisuus ratkaisee tasatilanteita, mutta ei tee muuten
+      // epäolennaisesta signaalista relevanttia.
+      if (score > 0 && row.repoPriority === 0) score += 1;
+      return score;
+    };
+
+    const ranked = uniqueSignals
+      .map(row => ({
+        row,
+        score: scoreSignal(row)
+      }))
+      .sort((a, b) =>
+        b.score - a.score ||
+        a.row.repoPriority - b.row.repoPriority
+      );
+
+    // Jos kysymys tuottaa relevantteja osumia, lähetetään ne ensin.
+    // Lisäksi muutama korkean prioriteetin signaali antaa AI:lle
+    // ajoneuvokohtaista kontekstia ilman valtavaa tokenimäärää.
+    const relevant = ranked.filter(x => x.score >= 3);
+
+    // Jos diagnostista kyselyä ei ole tai se ei tuota yhtään relevanttia
+    // termiä, älä palauta geneeristä "12 signaalia" -fallbackia.
+    // Tämä estää erityisesti lyhyiden vastausten kuten "on" ja "löytyy"
+    // näkymisen uutena OBDb-lähteenä.
+    const chosen = relevant.length
+      ? relevant.slice(0, 24)
+      : [];
+
+    const signals = chosen.map(item => {
+      const row = item.row;
+
+      return {
+        id: row.signal_id || '',
+        name: row.signal_name || '',
+        description: row.description || '',
+        path: row.signal_path || '',
+
+        header: row.header || '',
+        responseAddress:
+          row.response_address || '',
+        service: row.service || '',
+        command: row.command || '',
+        frequency: row.frequency,
+
+        bitIndex: row.bit_index,
+        bitLength: row.bit_length,
+        multiplier: row.multiplier,
+        divisor: row.divisor,
+        offset: row.offset_value,
+
+        min: row.min_value,
+        max: row.max_value,
+        unit: row.unit || '',
+        suggestedMetric:
+          row.suggested_metric || '',
+
+        signalset: row.config_name || '',
+        yearFrom: row.year_from,
+        yearTo: row.year_to,
+        sourceFile: row.source_file || '',
+
+        repo: row.repo,
+        matchType: row.matchType,
+        relevanceScore: item.score
+      };
+    });
+
+    if (!signals.length) {
       return {
         source: 'OBDb',
-        available: true,
-        repo,
-        license: 'CC-BY-SA-4.0',
-        signals
+        available: false,
+        repos: selectedRepos.map(x => x.repo),
+        requestedMake: rawMake,
+        requestedModel: rawModel,
+        note:
+          'OBDb-aineisto löytyi, mutta AI:lle sallittuja signaaleja ei löytynyt'
       };
-
-    } catch (e) {
-      console.error(
-        'OBDb',
-        repo,
-        e
-      );
     }
-  }
 
-  return {
-    source: 'OBDb',
-    available: false,
-    repo,
-    note:
-      'Ajoneuvokohtaista OBDb-signal set -dataa ei löytynyt tällä repo-nimellä'
-  };
+    const usedRepos = [
+      ...new Set(signals.map(x => x.repo))
+    ];
+
+    return {
+      source: 'OBDb',
+      available: true,
+      storage: 'Cloudflare D1',
+      repo: usedRepos.join(' + '),
+      repos: usedRepos,
+      requestedMake: rawMake,
+      requestedModel: rawModel,
+      year:
+        Number.isFinite(year) ? year : null,
+      totalMatchedSignals: uniqueSignals.length,
+      signals
+    };
+
+  } catch (e) {
+    console.error(
+      'OBDb D1 query',
+      rawMake,
+      rawModel,
+      e
+    );
+
+    return {
+      source: 'OBDb',
+      available: false,
+      requestedMake: rawMake,
+      requestedModel: rawModel,
+      note: 'OBDb D1 -haku epäonnistui'
+    };
+  }
 }
 
 // Valinnainen Wal33D-tietokanta.
@@ -1734,6 +2051,9 @@ function sourceSummary(ctx) {
     });
   }
 
+  // Näytä OBD-live data lähteenä vain, jos lookupObdexPids löysi
+  // tapauskohtaisesti relevantteja PID-parametreja. Geneeristä fallback-listaa
+  // ei enää muodosteta sähkö-/korivioille.
   if (ctx?.obdexPids?.length) {
     sources.push({
       name: 'OBD-live data',
@@ -1868,6 +2188,109 @@ havaintoon.
 Älä esitä samaa mittausta pakollisena seuraavana vaiheena
 vain siksi, että pyysit sitä aiemmin.
 
+YKSI MITTAUS KERRALLAAN — EHDOTON SÄÄNTÖ
+
+Kun annat uuden mittausohjeen, pyydä vain YKSI varsinainen
+mitattava arvo tai YKSI yksittäinen tarkistus kerrallaan.
+
+- Älä pyydä samassa vaiheessa useita PID-arvoja.
+- Älä pyydä samassa vaiheessa samaa arvoa useassa eri
+  käyttötilanteessa, kuten tyhjäkäynnillä JA 2500 r/min.
+- Älä anna listaa seuraavista mittauksista etukäteen.
+- Valitse se yksi mittaus, joka rajaa vikaa parhaiten
+  nykyisten tietojen perusteella.
+- Odota käyttäjän tulosta ennen seuraavan mittauksen valintaa.
+- Kierrosluku, moottorin lämpötila tai muu käyttötilanne saa
+  olla mittauksen ehto, mutta älä pyydä niiden arvoja erillisinä
+  mitattavina parametreina, ellei juuri se ole valittu mittaus.
+- Jos yhden mittauksen tulkinta todella vaatii toisen arvon,
+  pyydä se vasta seuraavassa viestissä.
+
+Esimerkki: älä pyydä yhtä aikaa MAF, RPM, ECT ja calculated load.
+Pyydä esimerkiksi ensin vain MAF lämpimällä tyhjäkäynnillä.
+Kun käyttäjä antaa MAF-tuloksen, käytä sitä seuraavan mittauksen
+valintaan. Arvioi lukeman normaaliutta vain, jos käytettävissä on
+siihen soveltuva varmennettu vertailuarvo.
+
+SEURAAVAN MITTAUKSEN INFORMAATIOARVO
+
+Ennen uuden mittauksen tai tarkistuksen valintaa vertaile hiljaisesti
+mahdollisia seuraavia vaiheita ja valitse niistä se, joka rajaa vikaa
+eniten turvallisesti ja käytettävissä olevilla välineillä.
+
+Arvioi erityisesti:
+
+- Mitä tämä mittaus voi vahvistaa tai sulkea pois?
+- Kuinka monta mahdollista vikasuuntia tulos erottaa toisistaan?
+- Vahvistaako mittaus ensin itse pääoireen olemassaolon?
+- Onko useilla samanaikaisilla oireilla mahdollinen yhteinen syöttö,
+  maadoitus, ohjaus tai muu yhteinen sähköinen riippuvuus?
+- Onko ehdotettu tarkistus vain helppo tehdä, vai onko se oikeasti
+  diagnostisesti paras seuraava vaihe?
+
+Älä valitse pelkkää silmämääräistä tarkistusta vain siksi, että se on
+helppo tai riskitön, jos turvallinen mittaus antaa olennaisesti enemmän
+diagnostista tietoa.
+
+Kun oireena on akun tyhjeneminen auton seistessä:
+
+- älä oleta automaattisesti sisävalon, oven kytkimen, lukkomoottorin,
+  ohjainlaitteen tai muun yksittäisen komponentin olevan syy
+- pyri ensin vahvistamaan, onko autossa poikkeavaa lepovirrankulutusta
+  TAI onko akun kunto/jännitetaso ensin varmistettava
+- jos käyttäjän ilmoittamilla välineillä voidaan tehdä turvallinen
+  lepovirtamittaus, se on yleensä informatiivisempi kuin yksittäisen
+  näkyvän valon tarkistus
+- jos mittaukseen tarvittavaa työkalua ei ole ilmoitettu, älä keksi sen
+  olevan käytettävissä; voit kysyä yhden tarkentavan kysymyksen tai
+  kertoa caution-kentässä, mitä työkalua mittaus vaatii
+- älä anna sulakkeiden irrottelusta pitkää sarjaohjetta ennen kuin
+  poikkeava lepovirta on ensin vahvistettu
+
+ÄLÄ NIMEÄ VIKAKOHDETTA LIIAN AIKAISIN
+
+Älä nimeä tiettyä komponenttia, anturia, asentotietoa, relettä,
+ohjainlaitetta, johtosarjaa tai maadoituspistettä todennäköiseksi
+vikasyyksi ilman sitä tukevaa mittaustietoa tai lähdedataa.
+
+Saat sanoa, että jokin vikaryhmä on teknisesti mahdollinen, mutta
+erota aina:
+1) mahdollinen selitys
+2) mittauksella tuettu havainto
+3) vahvistettu vika
+
+Samanaikaisesti ilmestyneet oireet ovat syy tutkia mahdollista yhteistä
+tekijää, mutta samanaikaisuus ei yksin todista yhteistä juurisyytä.
+
+EI NUMEERISEN LUKEMAN LUOKITTELUA ILMAN VARMENNETTUA VERTAILUARVOA
+
+Jos käyttäjä antaa mittaustuloksen ja lähdedatassa ei ole juuri siihen
+ajoneuvoon, moottoriversioon ja kyseiseen mittausolosuhteeseen
+soveltuvaa varmennettua vertailuarvoa tai raja-arvoa:
+
+- ÄLÄ luokittele lukemaa normaaliksi, poikkeavaksi, mahdolliseksi,
+  järkeväksi, uskottavaksi, epäuskottavaksi, hyväksi tai huonoksi
+  pelkän numeerisen arvon perusteella.
+- ÄLÄ käytä vastaavia epäsuoria ilmaisuja, kuten "ei näytä
+  poikkeavalta", "ei vaikuta liian pieneltä" tai "vaikuttaa
+  käyttökelpoiselta perustasolta".
+- Kerro tarvittaessa lyhyesti, ettei lukeman absoluuttista oikeellisuutta
+  voida luokitella ilman varmennettua vertailuarvoa.
+- Saat käyttää käyttäjän mittaustulosta vertailupisteenä seuraavalle
+  saman suureen mittaukselle eri käyttötilanteessa.
+- Saat arvioida muutoksen suuntaa tai signaalin käyttäytymistä vain siltä
+  osin kuin havainto itsessään sen osoittaa, esimerkiksi että arvo nousi,
+  laski, pysyi samana, katkesi tai vaihteli. Älä muuta tätä arvioksi
+  absoluuttisen lukeman normaaliudesta ilman lähdetukea.
+- Jos lähdedatassa ON soveltuva varmennettu vertailu- tai raja-arvo,
+  vertaa tulosta siihen ja kerro selvästi mihin lähdetietoon tulkinta
+  perustuu.
+
+Esimerkki: jos MAF on 2,1 g/s lämpimällä tyhjäkäynnillä eikä tarkkaa
+moottorikohtaista vertailuarvoa ole lähdedatassa, älä sano 2,1 g/s:n
+olevan normaali, mahdollinen, järkevä tai epäuskottava. Käytä sitä
+vertailupisteenä ja valitse seuraava yksi mittaus.
+
 PALAUTUSMUOTO
 
 Palauta AINA vain yksi JSON-objekti.
@@ -1910,6 +2333,9 @@ how:
 - Jos käyttäjä ilmoittaa mittaustuloksen, arvioi ensin
   mittaustulos.
 - Jos annat mittauksen, kerro miten se tehdään.
+- Jos seuraava vaihe vaatii puuttuvan työkalun saatavuuden
+  varmistamista, esitä how-kentässä käyttäjälle suora
+  kysymys. Älä korvaa kysymystä epäsuoralla toteamuksella.
 
 expected:
 - Mittauksen odotettu tulos vain, jos annat
@@ -1942,6 +2368,14 @@ KESKUSTELUN OHJAUS
 
 Luokittele käyttäjän uusin viesti asiayhteyden perusteella
 ennen vastauksen muodostamista.
+
+Tarkista aina ensin AI:n viimeisin vastaus:
+- Sisälsikö se suoran kysymyksen?
+- Oliko kysymys kyllä/ei-, saatavuus- tai kykenevyyskysymys?
+- Vastaako käyttäjän lyhyt viesti luonnollisesti juuri siihen?
+
+Jos kyllä, tulkitse vastaus suhteessa tähän viimeisimpään kysymykseen
+ennen kuin harkitset uuden kysymyksen esittämistä.
 
 Mahdollisia viestejä ovat:
 
@@ -2015,6 +2449,10 @@ Kun käyttäjä ilmoittaa mittaustuloksen:
 - Kerro, mitä mittaustulos tukee.
 - Kerro tarvittaessa, mitä se ei vielä todista.
 - Päivitä vikahypoteeseja tuloksen perusteella.
+- Älä täydennä käyttäjän mittaustulokseen liittyviä puuttuvia kaavio-, sulake-,
+  pinni-, komponentti- tai käyttötarkoitustietoja omalla oletuksella.
+- Jos käyttäjän ilmoittama tunnus, kuten "F15", ei yksin kerro piirin tehtävää,
+  kysy kaavion tarkka käyttötarkoitus ennen seuraavaa rajauskoetta.
 
 Valitse sen jälkeen seuraava tutkimusvaihe uudelleen.
 
@@ -2185,7 +2623,225 @@ sen mittausolosuhteet erikseen.
 ajon aikana. Käytä tarvittaessa turvallista
 lokitallennusta tai matkustajan apua.
 
-7. KÄYTTÄJÄN EHDOTTAMA VIKAKOHDE
+7. VIRRANMITTAUKSEN TURVALLISUUS
+
+Kun ohjaat käyttäjää mittaamaan virtaa yleismittarilla:
+
+- käsittele virranmittausta eri tavalla kuin jännitemittausta
+- älä ohjaa kytkemään yleismittaria virtamittausasennossa akun
+  napojen yli tai muun jännitelähteen rinnalle
+- varmista ennen varsinaista mittausohjetta, että käyttäjä tietää
+  käyttävänsä yleismittarin oikeaa A/10 A -liitäntää ja että
+  mittarin virtamittausalue on asianmukaisesti sulakkeella suojattu
+- jos tätä ei ole vahvistettu, kysy ensin suoraan esimerkiksi:
+  "Onko yleismittarissasi erillinen A/10 A -liitäntä ja onko
+  virtamittausalue sulakkeella suojattu?"
+- älä anna varsinaista lepovirtamittauksen kytkentäohjetta ennen kuin
+  tämä on varmistettu, jos käyttäjän osaamisesta ei ole muuta selvää näyttöä
+- kun mittari on sarjaan kytkettynä virtamittaukseen, älä ohjaa käyttäjää
+  käynnistämään autoa, käyttämään keskuslukitusta, puhallinta, valoja,
+  istuinlämmitystä tai muita suuria kuormia
+- auton ovien, takaluukun ja konepellin tilat on valmisteltava ennen
+  mittarin sarjakytkentää niin, ettei niitä tarvitse käyttää mittauksen aikana
+- jos auton järjestelmät pitää saada lepotilaan, älä aiheuta uusia herätteitä
+  mittauksen aikana avaamalla ovia tai aktivoimalla sähkölaitteita
+- älä oleta, että akun kaapelin irrottaminen ja uudelleenkytkentä on täysin
+  neutraali toimenpide; se voi nollata tai herättää ohjainlaitteita ja muuttaa
+  lepovirran käyttäytymistä
+- jos mittaustapa ei ole käyttäjälle varmasti tuttu, ohjaa lopettamaan ennen
+  kytkemistä ja pyydä tarvittaessa tarkentava kysymys tai vaihtoehtoinen tapa
+
+LEPOVIRTAMITTAUKSEN TULKINNAN RAJOITUS
+
+Jos tarkkaa ajoneuvo- ja olosuhdekohtaista varmennettua raja-arvoa ei ole
+lähdedatassa:
+
+- älä kuvaile lepovirta-arvoa sanoilla normaali, poikkeava, korkea, matala,
+  liian suuri, hyväksyttävä tai vastaavilla absoluuttisilla ilmaisuilla
+- älä täytä ifNormal- tai ifAbnormal-kenttiä väitteillä, jotka edellyttävät
+  tuntematonta raja-arvoa
+- kerro expected-kentässä, että tarkka ajoneuvokohtainen raja-arvo on
+  varmistettava teknisestä lähteestä
+- käytä saatua lepovirta-arvoa seuraavan tutkimusvaiheen valintaan vasta sen
+  jälkeen, kun siihen on saatavilla riittävä tulkintaperuste
+- saat arvioida vain havaittua käyttäytymistä, kuten että arvo vakautui,
+  vaihteli, nousi tai laski, jos käyttäjän mittaustulos sen osoittaa
+
+8. TYÖKALUN PUUTTUMINEN
+
+Jos diagnostisesti paras seuraava mittaus vaatii työkalua,
+jota käyttäjä ei ole ilmoittanut käytettävissä olevaksi:
+
+- älä korvaa sitä automaattisesti heikommalla mittauksella
+  vain siksi, että nykyinen työkalu on saatavilla
+- kysy käyttäjältä SUORAAN yksi tarkentava kysymys siitä,
+  onko tarvittava työkalu käytettävissä
+- tarkentavan kysymyksen pitää näkyä käyttäjälle how-kentässä
+  selkeänä kysymyslauseena ja päättyä kysymysmerkkiin
+- älä tyydy toteamaan esimerkiksi "on selvitettävä, onko
+  sopiva mittalaite käytettävissä" tai "tarvittava työkalu
+  pitää varmistaa", vaan esitä varsinainen kysymys
+- jos käyttäjä ilmoittaa, ettei työkalua ole, valitse vasta
+  sitten paras turvallinen vaihtoehtoinen tutkimusvaihe
+- älä käytä OBD-dataa korvikkeena yleismittari-, virta-,
+  paine- tai oskilloskooppimittaukselle, jos OBD-data ei
+  vastaa samaan diagnostiseen kysymykseen
+- älä ehdota akun jännitteen lukemista OBD:n kautta
+  lepovirran korvikkeena, jos tutkittavana on akun
+  tyhjeneminen auton seistessä
+- jos tarvittava työkalu puuttuu, pidä diagnostisesti paras
+  mittaus edelleen ensisijaisena suunnitelmana ja selvitä
+  ensin, voidaanko se tehdä oikealla välineellä
+- kun kyse on pelkästä työkalun saatavuuden varmistamisesta,
+  käytä test="Vastaus kysymykseen", tool="", expected="",
+  ifNormal="" ja ifAbnormal=""; itse mittausohje annetaan
+  vasta käyttäjän vahvistettua sopivan työkalun
+
+Esimerkki:
+
+Jos auto tyhjentää akun yön aikana ja käyttäjällä on ilmoitettu
+vain OBD-laite, älä vaihda suunnitelmaa automaattisesti akun
+jännitteen OBD-lukuun.
+
+how-kentässä pitää kysyä suoraan esimerkiksi:
+
+"Onko sinulla käytettävissä yleismittaria, jolla voi mitata
+myös virtaa/ampeeria?"
+
+Älä korvaa tätä kysymystä epäsuoralla toteamuksella.
+
+Jos käyttäjällä on sopiva yleismittari, lepovirran mittaus voi
+olla seuraava vaihe. Jos mittaria ei ole, valitse tämän jälkeen
+paras turvallinen vaihtoehtoinen tarkistus.
+
+9. LYHYET MYÖNTÄVÄT JA KIELTÄVÄT VASTAUKSET
+
+Tulkitse käyttäjän lyhyt vastaus aina suhteessa AI:n viimeksi
+esittämään suoraan kysymykseen.
+
+Tyypillisiä myöntäviä vastauksia ovat esimerkiksi:
+
+- kyllä
+- joo
+- juu
+- on
+- löytyy
+- löytyy kyllä
+- kyllä löytyy
+- ok
+- onnistuu
+- pystyn
+- voi
+
+Tyypillisiä kieltäviä vastauksia ovat esimerkiksi:
+
+- ei
+- ei ole
+- ei löydy
+- eipä ole
+- ei onnistu
+- en pysty
+- ei pysty
+- ei käy
+
+Jos viimeisin AI-vastaus sisälsi yhden suoran kyllä/ei-,
+saatavuus- tai kykenevyyskysymyksen ja käyttäjän uusi viesti
+on lyhyt myöntävä vastaus:
+
+- käsittele kysytty asia vahvistetuksi
+- älä kysy samaa kysymystä uudelleen
+- jatka diagnoosia seuraavaan tarkoituksenmukaiseen vaiheeseen
+- käytä vahvistettua tietoa työkalun, ominaisuuden tai
+  mittausmahdollisuuden saatavuudesta
+
+Jos käyttäjän uusi viesti on lyhyt kieltävä vastaus:
+
+- käsittele kysytty asia puuttuvaksi tai mahdottomaksi
+- älä kysy samaa kysymystä uudelleen
+- valitse paras turvallinen vaihtoehtoinen tutkimusvaihe
+  tai kerro, jos eteneminen vaatii kyseisen työkalun
+
+Esimerkki:
+
+AI:
+"Onko yleismittarissasi erillinen A/10 A -liitäntä ja onko
+virtamittausalue sulakkeella suojattu?"
+
+Käyttäjä:
+"löytyy"
+
+Tulkinta:
+Käyttäjä vahvisti kysytyn mittarin ominaisuuden.
+Älä kysy sitä uudelleen.
+Jatka lepovirtamittauksen seuraavaan vaiheeseen.
+
+Jos käyttäjän lyhyt vastaus on monitulkintainen suhteessa
+edelliseen kysymykseen, kysy vain yksi tarkentava kysymys.
+Älä kuitenkaan tee tätä, jos "kyllä", "joo", "on", "löytyy",
+"ei" tai vastaava yksiselitteisesti vastaa juuri esitettyyn
+kysymykseen.
+
+10. LEPOVIRRAN JATKODIAGNOOSI
+
+Kun käyttäjä on mitannut lepovirran ja ilmoittaa vakaan arvon:
+
+- älä valitse seuraavaa sulaketta oireiden perusteella ilman mittausnäyttöä
+- älä oleta, että keskuslukituksen, valojen, radion, korinohjauksen tai muun
+  samanaikaisen oireen sulake on lepovirran lähde
+- älä ankkuroidu siihen järjestelmään, jonka oire käyttäjä mainitsi ensimmäisenä
+- käsittele samanaikaiset oireet hypoteeseina, kunnes mittaus yhdistää ne samaan piiriin
+- jos tarvitset sulakekaaviota, kysy ensin sulakkeen tai piirin TARKKA käyttötarkoitus
+  tai kaavion teksti, ei pelkkää sulakenumeroa tai sulakekokoa
+- älä päättele sulakkeen käyttötarkoitusta sen numerosta
+- sulakkeen nimellisvirta (esim. 10 A, 15 A, 20 A) ei yksin ole diagnostinen
+  peruste lepovirran paikantamiseen
+- valitse sulakepiirit järjestelmällisesti yksi kerrallaan
+- jos sulakkeen irrotus voi herättää tai nollata ohjainlaitteita, huomioi tämä
+  tuloksen tulkinnassa ja odota järjestelmien rauhoittumista uudelleen ennen
+  uuden vakaan arvon kirjaamista
+- jos käytettävissä on turvallisempi tapa rajata piiri ilman sen katkaisua,
+  suosi sitä
+- älä koskaan täydennä käyttäjän puuttuvaa kaaviotietoa oletuksella
+
+Kun käyttäjä antaa sulakekaaviosta vain tunnuksen, kuten "F15":
+
+- älä oleta sen käyttötarkoitusta
+- kysy esimerkiksi:
+  "Mikä käyttötarkoitus tai teksti F15:n kohdalla lukee sulakekaaviossa?"
+- jos käyttäjä vastaa vain esimerkiksi "10 A", kerro että 10 A on sulakkeen
+  nimellisvirta eikä kerro piirin käyttötarkoitusta, ja kysy edelleen kaavion teksti
+
+Esimerkki:
+
+AI:
+"Mikä käyttötarkoitus tai teksti F15:n kohdalla lukee sulakekaaviossa?"
+
+Käyttäjä:
+"10 A"
+
+AI ei saa päätellä tästä, mitä piiriä F15 syöttää.
+AI:n pitää vastata esimerkiksi:
+"10 A kertoo sulakkeen nimellisvirran. Mikä käyttötarkoitus tai teksti
+F15:n kohdalla lukee sulakekaaviossa?"
+
+LEPOVIRRAN LASKENNALLINEN KULUTUS
+
+Jos tarkka OEM-raja-arvo puuttuu, älä luokittele lepovirtaa normaaliksi
+tai poikkeavaksi. Saat kuitenkin laskea käyttäjän mittaamasta virrasta
+kulutuksen ajan funktiona, esimerkiksi Ah/vrk, kunhan:
+
+- teet laskelman suoraan mitatusta arvosta
+- kerrot sen laskennallisena kulutuksena, et ajoneuvokohtaisena raja-arvona
+- et päättele pelkän laskelman perusteella, että akku on kunnossa tai viallinen
+- et päättele ilman akun kapasiteetti-, varaustila- tai kuntotietoa, kuinka nopeasti
+  akku varmasti tyhjenee
+
+Esimerkki:
+0,10 A jatkuvana vastaa laskennallisesti noin 2,4 Ah kulutusta 24 tunnissa.
+Tämä ei yksin määritä, onko arvo kyseisessä autossa hyväksyttävä tai riittääkö
+se yksin selittämään käyttäjän kuvaaman akun tyhjenemisen.
+
+11. KÄYTTÄJÄN EHDOTTAMA VIKAKOHDE
 
 Jos käyttäjä kysyy, voisiko jokin komponentti
 aiheuttaa oireen:
@@ -2207,7 +2863,7 @@ Jos saatavilla on sekä pyydetty että toteutunut
 kaasuläpän asento, niiden vertailu voi auttaa,
 mutta sekään ei yksin vahvista juurisyytä.
 
-8. TYYPPIVIAT JA MALLIKOHTAINEN TIETO
+12. TYYPPIVIAT JA MALLIKOHTAINEN TIETO
 
 Jos käyttäjä kysyy tunnetusta viasta,
 teknisestä tiedotteesta tai korjaussarjasta:
@@ -2245,7 +2901,7 @@ teknisten tiedotteiden verkkohakua.
 verkkodokumentteja, jos niitä ei ole annettu
 käytettävissä olevaan lähdeaineistoon.
 
-9. KESKUSTELUN JATKUVUUS
+13. KESKUSTELUN JATKUVUUS
 
 Hyödynnä aiempaa keskustelua, auton tietoja,
 mittaustuloksia ja käyttäjän havaintoja.
@@ -2264,7 +2920,7 @@ mutta arvioi niiden merkitys uudelleen.
 Älä toista aiempaa mittausta pelkän
 keskeneräisen mittauspyynnön vuoksi.
 
-10. TAVALLINEN KESKUSTELU
+14. TAVALLINEN KESKUSTELU
 
 Kaikki vastaukset eivät tarvitse mittausta.
 
@@ -2303,6 +2959,31 @@ johtimien värejä tai mittausarvoja.
 mahdollisia syitä ja OBD-PID-tietoja.
 
 Käsittele syyt hypoteeseina, älä diagnooseina.
+
+OBD-DATAN RELEVANSSI
+
+Älä käytä, ehdota tai nosta vastauksessa esiin OBD-, PID- tai
+OBDex-dataa vain siksi, että sitä on saatavilla.
+
+OBD-data on relevanttia vain, jos vähintään yksi saatavilla oleva
+parametri auttaa suoraan:
+- testaamaan tämänhetkistä vikahypoteesia
+- suorittamaan seuraavan valitun mittauksen
+- tulkitsemaan käyttäjän oiretta
+- erottamaan kaksi tai useampia vikasuuntia toisistaan
+
+Jos geneeriset moottorin OBD2 Mode 01 -PID:t eivät auta kyseisessä
+vikatapauksessa, jätä ne huomiotta.
+
+Esimerkkejä:
+- P0171 / seossäätövika: STFT, LTFT, MAF, MAP tai lambda voivat olla
+  tilanteesta riippuen relevantteja
+- P0101 / ilmamääräsignaali: MAF ja sitä tukeva moottoridata voivat olla
+  relevantteja
+- akun lepovirrankulutus: geneeriset moottorin Mode 01 -PID:t eivät
+  yleensä ole relevantteja
+- lähivalojen tai keskuslukituksen sähkövika: geneeriset moottorin
+  Mode 01 -PID:t eivät yleensä ole relevantteja
 
 5) OBDb voi sisältää ajoneuvokohtaisia
 OBD-signaaleja ja niiden kuvauksia.
@@ -2413,8 +3094,24 @@ YLEISET DIAGNOOSISÄÄNNÖT
 - Jos tarvitaan muu työkalu, kerro siitä
   caution-kentässä.
 
+- Virranmittauksessa älä siirry suoraan kytkentäohjeeseen pelkän
+  tiedon "yleismittari löytyy" perusteella. Varmista tarvittaessa ensin
+  A/10 A -liitäntä ja virtamittausalueen sulakesuojaus.
+
+- Älä ohjaa käyttämään auton suuria sähkökuormia tai keskuslukitusta
+  yleismittarin ollessa sarjaan kytkettynä virtamittaukseen.
+
 - Priorisoi mittaukset, jotka rajaavat
   vikamahdollisuuksia tehokkaasti.
+
+- Älä ankkuroidu samanaikaiseen oireeseen ilman mittausnäyttöä.
+  Esimerkiksi lepovirran lähdettä ei saa oletusarvoisesti etsiä
+  keskuslukituksen, valojen tai muun käyttäjän mainitseman oireen
+  sulakepiiristä vain siksi, että oire esiintyi samaan aikaan.
+
+- Älä päättele sulakkeen käyttötarkoitusta sulakenumerosta tai
+  sulakekoosta. Käytä kaavion varsinaista tekstiä tai muuta
+  varmennettua lähdetietoa.
 
 - Älä ehdota osien vaihtamista ennen
   riittävää mittausnäyttöä.
@@ -2597,6 +3294,23 @@ UUSIMMAN VIESTIN KÄSITTELY:
 
 Vastaa ensin käyttäjän uusimpaan viestiin.
 
+TARKISTA VIIMEISIN AI-KYSYMYS:
+
+Jos AI:n viimeisin vastaus sisälsi suoran kysymyksen ja käyttäjän
+uusin viesti on lyhyt vastaus kuten "kyllä", "joo", "on", "löytyy",
+"ei" tai "ei löydy", tulkitse se ensisijaisesti vastaukseksi juuri
+tuohon kysymykseen.
+
+Jos vastaus vahvistaa aiemmin kysytyn työkalun tai ominaisuuden,
+älä kysy samaa asiaa uudelleen. Jatka diagnoosia siitä pisteestä,
+johon vahvistus oikeuttaa.
+
+Esimerkki:
+AI kysyi, löytyykö yleismittarista A/10 A -liitäntä ja sulakesuojaus.
+Käyttäjä vastaa "löytyy".
+=> käsittele liitäntä ja sulakesuojaus vahvistetuksi ja jatka
+lepovirtamittauksen seuraavaan turvalliseen vaiheeseen.
+
 Selvitä, antaako viesti uutta tietoa oireista,
 käyttötilanteesta, mittaustuloksista tai
 käytettävissä olevista työkaluista.
@@ -2629,9 +3343,62 @@ Jos käyttäjä ilmoittaa, ettei mittausta ole tehty,
 älä tulkitse puuttuvaa mittaustulosta
 normaaliksi tai poikkeavaksi.
 
+Jos diagnostisesti paras seuraava mittaus vaatii työkalua,
+jota ei ole ilmoitettu käytettävissä olevaksi, älä vaihda
+automaattisesti heikompaan mittaukseen vain nykyisten
+työkalujen perusteella.
+
+Kysy käyttäjältä SUORAAN yksi tarkentava kysymys tarvittavan
+työkalun saatavuudesta. Kysymyksen pitää näkyä how-kentässä
+varsinaisena kysymyslauseena ja päättyä kysymysmerkkiin.
+Älä vain totea, että työkalun saatavuus pitää selvittää.
+
+Jos käyttäjä vastaa tähän lyhyesti myöntävästi, esimerkiksi
+"kyllä", "joo", "on" tai "löytyy", käsittele työkalun saatavuus
+vahvistetuksi ja jatka seuraavaan vaiheeseen. Älä kysy samaa
+työkalukysymystä uudelleen.
+
+Älä käytä OBD-dataa korvikkeena sellaiselle mittaukselle,
+johon OBD-data ei vastaa. Erityisesti akun yön aikana
+tyhjenemistä tutkittaessa OBD:n näyttämä akun jännite ei
+korvaa lepovirran mittausta.
+
 Jos käyttäjä ilmoitti mittaustuloksen,
 arvioi se ennen mahdollisen seuraavan
 mittauksen ehdottamista.
+
+Jos käyttäjä antaa sulaketunnuksen, kuten F15, älä päättele
+sen käyttötarkoitusta numeron perusteella. Tarvitset kaavion
+tekstin tai käyttötarkoituksen ennen kuin yhdistät sulakkeen
+mihinkään oireeseen tai järjestelmään.
+
+Sulakkeen nimellisvirta, kuten 10 A tai 15 A, ei kerro
+lepovirran lähdettä eikä piirin käyttötarkoitusta.
+
+Jos lepovirta on vakaa ja OEM-raja-arvo puuttuu, voit laskea
+mitatusta virrasta kulutuksen Ah/vrk, mutta älä luokittele
+virtaa normaaliksi tai poikkeavaksi ilman varmennettua
+ajoneuvokohtaista raja-arvoa.
+
+ENNEN SEURAAVAN VAIHEEN VALINTAA:
+
+Valitse uusi mittaus tai tarkistus vasta sen jälkeen, kun olet arvioinut,
+mikä yksittäinen vaihe antaa eniten uutta diagnostista tietoa juuri tästä
+tapauksesta. Älä valitse helpointa tarkistusta, jos toinen turvallinen
+mittaus rajaa selvästi enemmän vaihtoehtoja.
+
+Jos tapaus sisältää akun tyhjenemisen auton seistessä, arvioi ensin
+lepovirrankulutuksen tai akun kunnon/jännitetason varmistamisen
+diagnostinen arvo ennen yksittäisten komponenttien arvaamista.
+
+Käytä OBD/PID-dataa vain, jos se liittyy suoraan valittuun
+diagnoosisuuntaan. Muussa tapauksessa jätä se huomiotta.
+
+Jos seuraavaksi harkitaan yleismittarilla tehtävää virtamittausta,
+varmista ennen varsinaista sarjakytkentäohjetta tarvittaessa, että
+käyttäjä käyttää oikeaa A/10 A -liitäntää ja että virtamittausalue
+on sulakkeella suojattu. Älä ohjaa käyttämään auton sähkölaitteita
+mittarin ollessa sarjassa.
 
 Älä väitä kahden oireen johtuvan samasta viasta
 pelkän samanaikaisen esiintymisen perusteella.
