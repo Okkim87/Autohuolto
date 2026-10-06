@@ -99,7 +99,6 @@
         "operatingSystem":"Web",
         "browserRequirements":"JavaScript",
         "inLanguage":"fi-FI",
-        "isAccessibleForFree":true,
         "publisher":{
           "@id":"https://autosahkoapu.fi/#organization"
         }
@@ -145,8 +144,6 @@
 
 <main>
 
-<!-- HERO -->
-
 <section id="alku" class="hero">
 
   <div class="hero-grid-bg"></div>
@@ -161,14 +158,14 @@
       </p>
 
       <h1>
-        Älä arvaa vikaa.<br>
-        <span>Mittaa seuraavaksi oikein.</span>
+        Auton vikakoodit ja AI-autodiagnostiikka.<br>
+        <span>Älä arvaa vikaa – mittaa oikein.</span>
       </h1>
 
       <p class="lead">
-        Kerro auto, oire ja vikakoodi. Autosähköapu AI ohjaa
-        vianetsintää yksi mittaus kerrallaan ja jatkaa
-        mittaustulostesi perusteella.
+        Kerro auto ja oire. Lisää vikakoodi tai mittaustulos, jos sellainen
+        on tiedossa. Autosähköapu AI ohjaa vianetsintää yksi vaihe kerrallaan
+        ja jatkaa saamiesi mittaustulosten perusteella.
       </p>
 
       <div class="hero-actions">
@@ -211,14 +208,14 @@
           <b>01</b>
           <div>
             <small>SEURAAVA MITTAUS</small>
-            <strong>MAF lämpimällä tyhjäkäynnillä</strong>
+            <strong>Lue yksi relevantti mittausarvo määritellyssä käyttötilanteessa</strong>
           </div>
         </div>
 
         <div class="flow-branch">
-          <span>MAF 2,1 g/s</span>
+          <span>Käyttäjä antaa mittaustuloksen</span>
           <i>→</i>
-          <strong>AI valitsee seuraavan mittauksen</strong>
+          <strong>AI rajaa seuraavan tutkimussuunnan</strong>
         </div>
 
         <div class="console-footer">
@@ -231,9 +228,6 @@
 
   </div>
 </section>
-
-
-<!-- DIAGNOOSI -->
 
 <section id="diagnoosi" class="section diagnosis-section">
 
@@ -260,7 +254,6 @@
       </p>
 
     </div>
-
 
     <div class="chat-app reveal">
 
@@ -321,7 +314,6 @@
 
       </div>
 
-
       <div id="vehicle-context" class="vehicle-context" hidden>
 
         <div class="context-grid">
@@ -378,7 +370,6 @@
           </label>
 
         </div>
-
 
         <fieldset class="tool-fieldset compact-tools">
 
@@ -447,7 +438,6 @@
 
       </div>
 
-
       <div class="chat-access">
 
         <div>
@@ -481,7 +471,6 @@
 
       </div>
 
-
       <div
         id="chat-messages"
         class="chat-messages"
@@ -513,13 +502,11 @@
 
       </div>
 
-
       <div
         id="attachment-preview"
         class="attachment-preview"
         hidden
       ></div>
-
 
       <div class="chat-composer">
 
@@ -558,7 +545,6 @@
 
       </div>
 
-
       <div class="composer-meta">
         <span>Kuvat · kytkentäkaaviot · CSV · JSON · TXT</span>
         <span>Enter lähettää · Shift+Enter rivinvaihto</span>
@@ -574,9 +560,6 @@
   </div>
 
 </section>
-
-
-<!-- MITEN TOIMII -->
 
 <section id="miten" class="section">
 
@@ -594,8 +577,12 @@
         joka auttaa rajaamaan vaihtoehtoja.
       </p>
 
-    </div>
+      <p>
+        Jos mittaustulos ei tue aiempaa oletusta, vianetsintäsuuntaa
+        muutetaan sen sijaan, että samaa diagnoosia yritettäisiin väkisin vahvistaa.
+      </p>
 
+    </div>
 
     <div class="steps-grid">
 
@@ -627,9 +614,6 @@
 
   </div>
 </section>
-
-
-<!-- KEHITYSVAIHE -->
 
 <section id="kehityksessa" class="section section-dark">
 
@@ -681,9 +665,6 @@
 
 </section>
 
-
-<!-- OPPAAT -->
-
 <section id="oppaat" class="section seo-guides">
 
   <div class="container">
@@ -695,7 +676,6 @@
       <h2>Lisätietoa vikakoodeista ja mittauksista</h2>
 
     </div>
-
 
     <div class="guide-grid">
       <a class="guide-card reveal" href="/akku-tyhjenee-yon-aikana/"><small>AKKU JA SÄHKÖVIAT</small><h3>Akku tyhjenee yön aikana</h3><p>Akun kunto, latausvajaus vai lepovirta? Katso mistä aloittaa.</p><span>Lue opas →</span></a>
@@ -712,10 +692,9 @@
         <span>Lue opas →</span>
       </a>
 
-
       <a
         class="guide-card reveal"
-        href="/Autodiagnostiikka/"
+        href="/autodiagnostiikka/"
       >
         <small>VIANHAKU</small>
         <h3>Autodiagnostiikka käytännössä</h3>
@@ -724,7 +703,6 @@
         </p>
         <span>Lue opas →</span>
       </a>
-
 
       <a
         class="guide-card reveal"
@@ -738,7 +716,6 @@
         <span>Lue opas →</span>
       </a>
 
-
       <a
         class="guide-card reveal"
         href="/vikakoodi-p0171/"
@@ -751,7 +728,6 @@
         <span>P0171-opas →</span>
       </a>
 
-
       <a
         class="guide-card reveal"
         href="/vikakoodi-p0101/"
@@ -763,7 +739,6 @@
         </p>
         <span>P0101-opas →</span>
       </a>
-
 
       <a
         class="guide-card reveal"
@@ -789,21 +764,31 @@
       <p class="eyebrow">Palvelun tekijältä</p>
       <h2 id="tekijasta-otsikko">Miksi tein Autosähköapu AI -palvelun?</h2>
     </div>
-    <p><strong>Mikko Minkkinen · Autosähköapu AI -palvelun kehittäjä</strong></p>
+
+    <p class="author-line">
+      <strong>Mikko Minkkinen</strong>
+      <span> · Autosähköapu AI -palvelun kehittäjä</span>
+    </p>
+
     <p>Olen kehittänyt Autosähköapu AI -palvelua, jonka tarkoituksena on ohjata auton vianetsintää mittaus kerrallaan ja vähentää alalla esiintyvää ”vaihdetaan osia, kunnes vika poistuu” -menetelmää.</p>
+
     <p>Palvelu ei perustu pelkästään tekoälyn vastauksiin. Sen taustalla on myös autodiagnostiikan tietokanta, josta haetaan muun muassa vikakoodien määritelmiä ja OBD-mittausparametreihin liittyvää tietoa. Tekoäly hyödyntää saatavilla olevaa dataa yhdessä käyttäjän ilmoittamien oireiden ja mittaustulosten kanssa. Jos tarkkaa ajoneuvokohtaista tietoa ei ole vahvistettu, sitä ei esitetä varmana.</p>
+
     <p>Käyttäjä kertoo auton oireet ja mahdolliset vikakoodit, minkä jälkeen palvelu ehdottaa seuraavaa tarkistusta. Kun mittaustulos annetaan, palvelu arvioi sen ja valitsee jatkovaiheen. Jos käyttäjä kertoo uuden olennaisen oireen, myös aiempaa mittaussuunnitelmaa voidaan muuttaa.</p>
+
     <h3>Voisiko palvelu auttaa myös autoalan opetuksessa?</h3>
+
     <p>Ajattelin, että tästä voisi olla hyötyä myös autoalan opetuksessa esimerkiksi vianetsinnän päättelyketjun harjoittelussa. Opiskelija joutuu pohtimaan, mitä mitataan, miksi mitataan ja mitä tuloksesta voidaan päätellä.</p>
+
     <p>Palvelu on edelleen kehitysvaiheessa. Sen ehdotuksia pitää siksi arvioida kriittisesti.</p>
-    <p>Etsin muutamaa autoalan opettajaa tai kouluttajaa kokeilemaan palvelun laajempaa versiota maksutta ja antamaan palautetta kehitykseen. Erityisesti kiinnostaa, soveltuisiko palvelu diagnostiikan opetuksen tueksi ja missä sen toimintaa pitäisi vielä kehittää.</p>
+
     <p>Jos olet kiinnostunut kokeilusta, <a href="mailto:autosahkoapu@gmail.com?subject=Autos%C3%A4hk%C3%B6apu%20AI%20%E2%80%93%20opettajan%20kokeilu">ota yhteyttä sähköpostitse: autosahkoapu@gmail.com</a>.</p>
+
     <a class="button button-primary" href="#diagnoosi">Kokeile mittausohjattua vianhakua</a>
   </div>
 </section>
 
 </main>
-
 
 <footer class="site-footer">
 
@@ -836,7 +821,6 @@
 
   </div>
 
-
   <div class="container footer-bottom">
 
     <span>
@@ -850,7 +834,6 @@
   </div>
 
 </footer>
-
 
 <script src="config.js"></script>
 <script src="script.js"></script>
