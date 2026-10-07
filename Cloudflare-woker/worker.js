@@ -2068,7 +2068,8 @@ async function lookupWal33d(raw, env) {
   return output;
 }
 
-// Asiakkaalle näytettävä lähdeyhteenveto.
+// Asiakkaalle näytettävä hakutulosyhteenveto, ei todistus AI:n käyttämistä
+// lähteistä. Nykyinen vastausrakenne ei sisällä väitekohtaista lähdeviittausta.
 
 function sourceSummary(ctx) {
   const sources = [];
@@ -2154,11 +2155,11 @@ function sourceSummary(ctx) {
   // ei enää muodosteta sähkö-/korivioille.
   if (ctx?.obdexPids?.length) {
     sources.push({
-      name: 'OBD-live data',
+      name: 'Geneerinen OBD-aineisto (löytynyt)',
       provider: 'OBDex',
       ok: true,
       detail:
-        `${ctx.obdexPids.length} relevanttia geneeristä PID-parametria`
+        `${ctx.obdexPids.length} SAE Mode 01 PID-kuvausta · ei auton mittaustuloksia · käyttö tässä vastauksessa ei varmennettu`
     });
   }
 
@@ -2172,11 +2173,11 @@ function sourceSummary(ctx) {
     signalCount > 0
   ) {
     sources.push({
-      name: 'Ajoneuvodata',
+      name: 'OBDb-signaaliaineisto (löytynyt)',
       provider: 'OBDb',
       ok: true,
       detail:
-        `${ctx.obdb.repo} · ${signalCount} signaalia`
+        `${ctx.obdb.repo} · ${signalCount} signaalikuvausta · ajoneuvosoveltuvuus ja käyttö tässä vastauksessa eivät ole varmennettuja · ei OEM-korjausohje`
     });
   }
 
@@ -3087,6 +3088,19 @@ tarkentava kysymys kerrallaan.
 
 MERKKIKOHTAISEN DIAGNOSTIIKAN RAJAT
 
+Lähdeyhteenveto näyttää haussa löytynyttä aineistoa, ei varmennusta
+siitä, että tietoa käytettiin vastauksessa tai että se soveltuu juuri autoon.
+PID-kuvaukset eivät ole auton mitattua livedataa. Signaalien lukumäärä
+ei todista niiden relevanssia. Älä kuvaa löydettyä aineistoa käytetyksi
+tai ajoneuvolle varmennetuksi ilman väitekohtaista näyttöä.
+
+Jos käyttäjän kertomus aiemmasta korjauksesta on epäselvä, varmista
+mitä todella tehtiin. Älä oleta akun vaihtoa tai rekisteröintiä tapahtuneeksi.
+Aktiivinen tai uusiutuva ohjausvikakoodi ei yksin sulje pois nykyistä
+syöttöjännitteen tai maadoituksen vikaa eikä todista ohjauslaitteen
+sisäistä vikaa. Erota nämä hypoteesit ajoneuvokohtaisella tutkimuksella.
+Huomioi jatkuva "Do not drive" -varoitus riippumatta koodien tilasta.
+
 Erota kolme tietotasoa:
 GENERIC_OBD: standardit DTC-koodit, SAE Mode 01 PID:t,
 readiness ja geneerinen livedata. Saatavuus tarkistetaan autosta.
@@ -3446,6 +3460,11 @@ KÄYTETTÄVISSÄ OLEVAT TYÖKALUT:
 ${(c.tools || []).join(', ') || 'ei ilmoitettu'}
 
 LÄHDEKERROSTEN RAJAUS:
+Haussa löytynyt aineisto ei ole automaattisesti tässä vastauksessa käytettyä
+tai ajoneuvolle varmennettua tietoa. PID-kuvaus ei ole auton mittaustulos.
+Varmista epäselvä aiempi akunvaihto/rekisteröinti. Aktiivinen ohjauskoodi
+ei sulje pois nykyistä syöttö- tai maadoitusvikaa. Ajokielto huomioidaan
+riippumatta vikakoodien tilasta.
 GENERIC_OBD: OBDex DTC ja SAE Mode 01 PID -aineisto tukevat
 vain geneerisiä määritelmiä ja relevanttia livedataa, eivät OEM-toimintoja.
 VEHICLE_TECHNICAL_DATA: tarkat pinnit, kaaviot, sulakkeet, sijainnit
