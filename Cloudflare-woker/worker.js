@@ -3085,6 +3085,49 @@ enemmän kuin uusi mittaus, esitä kysymys.
 Esitä yleensä vain yksi olennainen
 tarkentava kysymys kerrallaan.
 
+MERKKIKOHTAISEN DIAGNOSTIIKAN RAJAT
+
+Erota kolme tietotasoa:
+GENERIC_OBD: standardit DTC-koodit, SAE Mode 01 PID:t,
+readiness ja geneerinen livedata. Saatavuus tarkistetaan autosta.
+VEHICLE_TECHNICAL_DATA: ajoneuvokohtaiset kytkentäkaaviot,
+sulakkeet, komponenttien sijainnit, pinnit ja tavoitearvot.
+OEM_DIAGNOSTIC_DATA: valmistajakohtaiset PID:t, diagnostiikkapalvelut,
+toimilaitetestit, adaptaatiot, koodaukset, moduulikohtaiset testit
+sekä CAN/UDS/KWP-toiminnot ja tunnisteet.
+
+Ajoneuvossa voi olla standardin OBD/CAN-datan lisäksi näitä
+valmistajakohtaisia datakerroksia ja diagnostiikkamenetelmiä.
+Älä oleta, että geneerinen OBD-testeri tai yleinen CAN-yhteys
+antaa pääsyn niihin. Älä nimeä lähdettä OEM-dataksi vain sen
+merkin, mallin, tietokannan nimen tai signaalin löytymisen perusteella.
+OBDex on geneeristä dataa; OBDb-aineisto ei automaattisesti ole
+varmennettua ajoneuvokohtaista teknistä tai valmistajadataa.
+
+Jos seuraava vaihe vaatii valmistajakohtaista diagnostiikkaa eikä
+juuri kyseisen toiminnon tietoa ja ajoneuvosoveltuvuutta ole varmennettu
+käytettävissä olevasta lähteestä:
+- älä keksi valmistajakohtaisia PID:eja, CAN-sanomia tai CAN-ID:tä,
+  ECU-pinnien toimintoja, toimilaitetestejä, adaptaatioita tai koodauksia
+- älä käytä geneeristä OBD-dataa korvikkeena, jos se ei vastaa samaan
+  diagnostiseen kysymykseen
+- kerro lyhyesti, että vaihe vaatii merkkikohtaista diagnostiikkatietoa
+  tai sitä tukevaa diagnostiikkalaitetta
+- kysy, onko käyttäjällä merkkikohtainen tai laajempi testeri;
+  käytä nykyisen JSON-rakenteen how-kenttää kysymykseen
+- jos laite on jo ilmoitettu, kysy näkyykö kyseinen moduuli/toiminto
+  siinä. Autocom tai muu laitenimi ei takaa kaikkien toimintojen tukea
+- jatka fyysisellä mittauksella vain, jos se aidosti testaa samaa
+  hypoteesia; selitä yhteys, älä esitä sitä puuttuvan toiminnon vastineena.
+
+Esimerkit:
+Tavallinen OBD-lukija ja EGR-toimilaitetesti: geneerinen OBD2 ei
+yleensä sisällä valmistajakohtaista EGR-toimilaitetestiä. Kysy testerin tuki.
+Ajovalojen CAN-ID: kerro, ettei tunnistetta ole varmennettu; älä arvaa ID:tä.
+Geneeriset OBD-arvot ja adaptaatio: adaptaatio voi vaatia sitä tukevan testerin.
+Vain yleismittari: älä tarjoa geneerisiä OBD-arvoja tai fyysistä mittausta
+puuttuvan valmistajakohtaisen testeritoiminnon automaattisena korvikkeena.
+
 DATALÄHDEHIERARKIA
 
 1) Käytä promptissa annettua ulkoista ajoneuvo-
@@ -3390,6 +3433,24 @@ KÄYTETTÄVISSÄ OLEVAT TYÖKALUT:
 
 ${(c.tools || []).join(', ') || 'ei ilmoitettu'}
 
+LÄHDEKERROSTEN RAJAUS:
+GENERIC_OBD: OBDex DTC ja SAE Mode 01 PID -aineisto tukevat
+vain geneerisiä määritelmiä ja relevanttia livedataa, eivät OEM-toimintoja.
+VEHICLE_TECHNICAL_DATA: tarkat pinnit, kaaviot, sulakkeet, sijainnit
+ja tavoitearvot vaativat erikseen ajoneuvolle varmennetun teknisen lähteen.
+OEM_DIAGNOSTIC_DATA: tässä integraatiossa ei ole automaattisesti
+varmennettua OEM-testipalvelujen, adaptaatioiden tai koodausten lähdettä.
+OBDb-signaalin tai Wal33D/Autodiag2-DTC:n löytyminen ei varmista näitä
+toimintoja tai niiden soveltuvuutta tähän ajoneuvoon. VIN on tunnistustietoa.
+
+MERKKIKOHTAISEN DIAGNOSTIIKAN RAJAT — MUISTUTUS:
+Älä keksi PID:eja, CAN-ID:tä, ECU-pinnien toimintoja, toimilaitetestejä,
+adaptaatioita tai koodauksia. Puuttuvan varmennetun OEM-tiedon kohdalla
+kerro rajoite ja kysy merkkikohtaisen/laajemman testerin saatavuutta tai
+jo ilmoitetun testerin moduulin/toiminnon tukea. Autocom ei takaa tukea.
+Geneerinen OBD ei korvaa OEM-toimintoa. Fyysinen mittaus sallitaan
+vain samaa hypoteesia aidosti testaavana, ei automaattisena korvikkeena.
+
 ULKOINEN LÄHDEDATA:
 
 VIN / NHTSA vPIC:
@@ -3408,7 +3469,7 @@ GENEERISET OBD-PIDIT / OBDex:
 
 ${obdexPids}
 
-AJONEUVOKOHTAISET SIGNAALIT / OBDb:
+MALLIN AINEISTOSTA LÖYTYNEET SIGNAALIT / OBDb (EI AUTOMAATTISESTI VARMENNETTUA OEM-DATAA):
 
 ${obdb}
 
