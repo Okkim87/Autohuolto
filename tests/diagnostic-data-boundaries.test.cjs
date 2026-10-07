@@ -5,7 +5,7 @@ const source = fs.readFileSync('Cloudflare-woker/worker.js', 'utf8')
   .replace('export default {', 'const worker = {')
   .replace('export class AccessGate', 'class AccessGate');
 const scope = vm.createContext({ console, Response, Request, URL, crypto });
-vm.runInContext(source + '\nglobalThis.check = { SYSTEM_PROMPT, buildPrompt };', scope);
+vm.runInContext(source + '\nglobalThis.check = { SYSTEM_PROMPT, buildPrompt, sourceSummary };', scope);
 const { SYSTEM_PROMPT, buildPrompt } = scope.check;
 const cases = [
   ['Voinko tehdä EGR-toimilaitetestin tavallisella OBD-lukijalla?', /geneerinen OBD2 ei\s+yleensä sisällä valmistajakohtaista EGR-toimilaitetestiä/i, []],
@@ -37,4 +37,18 @@ assert.match(SYSTEM_PROMPT, /ei korvaa suoraa testerikysymystä how-kentässä/)
 assert.match(populated, /suora\s+testerikysymys myös CAN-ID-kysymyksessä/);
 assert.match(SYSTEM_PROMPT, /Älä nimeä ohjainlaitetta DME\/DDE-tunnuksella/);
 assert.match(populated, /Älä nimeä DME\/DDE-moduulia/);
+const summary = scope.check.sourceSummary({
+  obdexPids: [{ pid: '0C' }],
+  obdb: { available: true, repo: 'Audi-A6', signals: [{ name: 'Steering' }] }
+});
+assert.equal(summary.length, 2);
+assert.match(summary[0].name, /löytynyt/);
+assert.match(summary[0].detail, /ei auton mittaustuloksia/);
+assert.match(summary[0].detail, /käyttö tässä vastauksessa ei varmennettu/);
+assert.match(summary[1].detail, /ajoneuvosoveltuvuus ja käyttö tässä vastauksessa eivät ole varmennettuja/);
+assert.equal(summary[1].name.includes('Ajoneuvodata'), false);
+assert.deepEqual(Object.keys(summary[1]).sort(), ['detail', 'name', 'ok', 'provider']);
+assert.equal(scope.check.sourceSummary({}).length, 0);
+assert.match(SYSTEM_PROMPT, /Älä oleta akun vaihtoa/);
+assert.match(SYSTEM_PROMPT, /ohjausvikakoodi ei yksin sulje pois nykyistä/);
 console.log('PASS: five diagnostic prompt regressions and populated-source boundaries. These tests verify prompt policy, not live model responses.');
