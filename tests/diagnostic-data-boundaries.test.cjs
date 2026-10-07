@@ -33,4 +33,8 @@ assert.match(populated, /EI AUTOMAATTISESTI VARMENNETTUA OEM-DATAA/);
 assert.match(populated, /OBDb-signaalin tai Wal33D\/Autodiag2-DTC:n löytyminen ei varmista/);
 assert.match(SYSTEM_PROMPT, /kysy näkyykö kyseinen moduuli\/toiminto/);
 assert.match(SYSTEM_PROMPT, /käytä nykyisen JSON-rakenteen how-kenttää/);
+assert.match(SYSTEM_PROMPT, /ei korvaa suoraa testerikysymystä how-kentässä/);
+assert.match(populated, /suora\s+testerikysymys myös CAN-ID-kysymyksessä/);
+assert.match(SYSTEM_PROMPT, /Älä nimeä ohjainlaitetta DME\/DDE-tunnuksella/);
+assert.match(populated, /Älä nimeä DME\/DDE-moduulia/);
 console.log('PASS: five diagnostic prompt regressions and populated-source boundaries. These tests verify prompt policy, not live model responses.');
