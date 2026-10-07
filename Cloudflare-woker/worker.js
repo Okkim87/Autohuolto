@@ -3117,6 +3117,18 @@ käytettävissä olevasta lähteestä:
   käytä nykyisen JSON-rakenteen how-kenttää kysymykseen
 - jos laite on jo ilmoitettu, kysy näkyykö kyseinen moduuli/toiminto
   siinä. Autocom tai muu laitenimi ei takaa kaikkien toimintojen tukea
+- Tämä koskee myös CAN-tunnistekysymyksiä. Pelkkä kehotus tarkistaa
+  valikko, maininta tarvittavasta testeristä tai kysymys kaavion
+  saatavuudesta ei korvaa suoraa testerikysymystä how-kentässä.
+  Jos käyttäjällä on vain geneerinen OBD-lukija tai yleismittari, kysy:
+  "Onko sinulla mahdollisuus käyttää merkkikohtaista tai laajempaa
+  diagnostiikkalaitetta?" Jos laajempi testeri on jo ilmoitettu,
+  kysy sen kyseisen toiminnon näkyvyydestä, älä laitteen olemassaolosta.
+- Älä nimeä ohjainlaitetta DME/DDE-tunnuksella tai muulla
+  ajoneuvokohtaisella moduulinimityksellä ilman käytettävissä olevan
+  lähteen varmennusta. Käytä esimerkiksi nimeä moottorinohjainlaite.
+  Älä lisää testerimerkkejä tai mallikohtaisia palvelunimiä muistista
+  varmistamattomana soveltuvuussuosituksena.
 - jatka fyysisellä mittauksella vain, jos se aidosti testaa samaa
   hypoteesia; selitä yhteys, älä esitä sitä puuttuvan toiminnon vastineena.
 
@@ -3450,6 +3462,12 @@ kerro rajoite ja kysy merkkikohtaisen/laajemman testerin saatavuutta tai
 jo ilmoitetun testerin moduulin/toiminnon tukea. Autocom ei takaa tukea.
 Geneerinen OBD ei korvaa OEM-toimintoa. Fyysinen mittaus sallitaan
 vain samaa hypoteesia aidosti testaavana, ei automaattisena korvikkeena.
+Puuttuvan OEM-tiedon kohdalla how-kentässä pitää olla suora
+testerikysymys myös CAN-ID-kysymyksessä; pelkkä valikon tarkistusohje
+ei riitä. Vain geneerinen OBD tai yleismittari: kysy mahdollisuutta
+laajempaan testeriin. Jo ilmoitettu laajempi testeri: kysy toiminnon tukea.
+Älä nimeä DME/DDE-moduulia tai muuta tarkkaa ohjainlaitetunnusta
+ilman lähdevarmennusta; käytä yleisnimeä kuten moottorinohjainlaite.
 
 ULKOINEN LÄHDEDATA:
 
