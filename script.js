@@ -97,7 +97,6 @@ function caseData() {
     car: $('car').value.trim(),
     year: $('car-year').value.trim(),
     engine: $('engine').value.trim(),
-    vin: $('vin').value.trim().toUpperCase(),
     dtc: $('dtc').value.trim(),
     tools: selectedTools()
   };
