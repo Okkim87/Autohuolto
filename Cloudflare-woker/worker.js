@@ -59,7 +59,7 @@ export default {
       );
 
     } catch (e) {
-      console.error(e);
+      console.error('worker_request_failed');
 
       return json({
         error: 'Palvelinvirhe. Yritä uudelleen.'
@@ -120,7 +120,7 @@ export class AccessGate {
             lastUsedAt: record.lastUsedAt
           });
           try { await kv.put(key, value); }
-          catch (error) { console.error('Käyttösaldon KV-peilaus epäonnistui', error); }
+          catch (error) { console.error('credit_kv_mirror_failed'); }
         }
       }
     };
@@ -432,6 +432,9 @@ async function diagnose(request, env, headers) {
             effort: 'low'
           },
           max_output_tokens: 1100,
+          // Keskusteluhistoria toimitetaan joka pyynnössä selaimesta.
+          // Poistaa Responses-vastausten oletustallennuksen, ei kaikkia lokeja.
+          store: false,
           input: [
             {
               role: 'system',
@@ -454,7 +457,7 @@ async function diagnose(request, env, headers) {
     const raw = await response.json();
 
     if (!response.ok) {
-      console.error('OpenAI error', raw);
+      console.error('openai_http_error', response.status);
 
       throw new Error(
         'AI-palvelu ei vastannut.'
@@ -515,7 +518,7 @@ async function diagnose(request, env, headers) {
       }, 402, headers);
     }
 
-    console.error(e);
+    console.error('diagnose_failed');
 
     return json({
       error:
@@ -1133,7 +1136,7 @@ async function decodeVin(vinRaw, yearRaw) {
     };
 
   } catch (e) {
-    console.error('vPIC', e);
+    console.error('vin_lookup_failed');
 
     return {
       source: 'NHTSA vPIC',
@@ -1209,7 +1212,7 @@ async function lookupDtcs(raw, env) {
       }
 
     } catch (e) {
-      console.error('Autodiag2 query', e);
+      console.error('dtc_lookup_failed');
 
       output.push({
         code,
@@ -1315,7 +1318,7 @@ async function lookupObdex(raw, env) {
 
     return out;
   } catch (e) {
-    console.error('OBDex D1', e);
+    console.error('generic_dtc_lookup_failed');
     return codes.map(code => ({
       source: 'OBDex',
       sourceStore: 'D1',
@@ -1454,7 +1457,7 @@ async function lookupObdexPids(c, obdexRows = [], env) {
       relevanceScore: score
     }));
   } catch (e) {
-    console.error('OBDex PID D1', e);
+    console.error('generic_pid_lookup_failed');
     return [];
   }
 }
@@ -1977,12 +1980,7 @@ async function lookupObdbSignals(c, vehicle, env) {
     };
 
   } catch (e) {
-    console.error(
-      'OBDb D1 query',
-      rawMake,
-      rawModel,
-      e
-    );
+    console.error('signal_lookup_failed');
 
     return {
       source: 'OBDb',
@@ -2050,10 +2048,7 @@ async function lookupWal33d(raw, env) {
       }
 
     } catch (e) {
-      console.error(
-        'Wal33D query',
-        e
-      );
+      console.error('manufacturer_dtc_lookup_failed');
 
       output.push({
         source: 'Wal33D',
