@@ -127,14 +127,14 @@ document.querySelectorAll('.pay-link').forEach(a => {
   const plan = a.dataset.plan;
   const url = cfg.paymentLinks?.[plan];
 
-  if (url && !url.includes('VAIHDA-EEZYPAY')) {
+  if (cfg.salesOpen === true && url && !url.includes('VAIHDA-EEZYPAY')) {
     a.href = url;
     a.target = '_blank';
     a.rel = 'noopener';
   } else {
     a.addEventListener('click', e => {
       e.preventDefault();
-      alert('EezyPay-maksulinkki lisätään config.js-tiedostoon.');
+      alert('Maksullinen myynti ei ole vielä avoinna. Voit pyytää maksuttoman testikoodin: autosahkoapu@gmail.com');
     });
   }
 });
@@ -556,8 +556,8 @@ function addPaywall() {
           Voit jatkaa samaa diagnoosia aktivointikoodilla.
           Mittaustulokset ja keskustelu pysyvät tässä ketjussa.
         </p>
-        <a class="button button-primary" href="#hinnat">
-          Valitse käyttöpaketti
+        <a class="button button-primary" href="mailto:autosahkoapu@gmail.com?subject=Autos%C3%A4hk%C3%B6apu%20AI%20%E2%80%93%20testikoodi">
+          Pyydä maksuton testikoodi
         </a>
       </div>
     </article>`

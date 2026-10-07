@@ -57,7 +57,8 @@
     li {
       margin: 9px 0;
     }
-  </style>
+  label { display:block; margin:16px 0; } input,textarea,button { box-sizing:border-box; font:inherit; padding:10px; border:1px solid #48627a; border-radius:6px; } input,textarea { display:block; width:100%; background:#111e2e; color:#edf4fb; } button { cursor:pointer; margin:8px 4px 8px 0; } button:disabled { cursor:wait; opacity:.6; } pre { white-space:pre-wrap; overflow-wrap:anywhere; } [hidden] { display:none !important; }
+</style>
 </head>
 
 <body>
@@ -72,66 +73,56 @@
 </header>
 
 <main>
-
-  <h1>Sopimuksen peruuttaminen</h1>
-
-  <p>Päivitetty 19.9.2026</p>
-
-  <h2>Peruuttamisoikeus</h2>
-
-  <p>
-    Kuluttajalla on verkossa tehdyn palvelusopimuksen yhteydessä
-    lähtökohtaisesti 14 päivän peruuttamisaika sopimuksen tekemisestä.
-    Mahdolliset poikkeukset ja palvelun aloittamiseen liittyvä
-    kohtuullinen korvaus määräytyvät kuluttajansuojalain perusteella.
-    Pelkkä koodin toimittaminen tai aktivointi ei automaattisesti
-    poista peruuttamisoikeutta.
-  </p>
-
+  <h1>Peruuttaminen ja testikäytön lopettaminen</h1>
+  <p>Päivitetty 7.10.2026</p>
+  <p><strong>Maksullinen myynti ei ole vielä avoinna.</strong> Nykyinen selainkokeilu ja erikseen toimitettavat testikoodit ovat maksuttomia. Niistä ei synny myöhempää maksuvelvollisuutta tai automaattisesti uusiutuvaa tilausta.</p>
+  <h2>Maksuttoman testikäytön lopettaminen</h2>
+  <p>Voit lopettaa testin käyttämisen milloin tahansa. Testikoodin sulkemista voi pyytää osoitteesta <a href="mailto:autosahkoapu@gmail.com">autosahkoapu@gmail.com</a>. Henkilötietojen poistopyyntö ja muut tietosuojaoikeudet ovat erillisiä testin lopettamisesta: katso <a href="/tietosuoja/">tietosuojaseloste</a>.</p>
+  <h2>Jos olet tehnyt maksullisen ostoksen</h2>
+  <p>Kuluttajalla on lähtökohtaisesti oikeus peruuttaa verkossa tehty palvelusopimus 14 päivän kuluessa sopimuksen tekemisestä ilman syytä. Määräajan noudattamiseen riittää, että lähetät peruuttamisilmoituksen ennen määräajan päättymistä. Jos lakisääteisiä tietoja peruuttamisoikeudesta ei ole annettu, määräaika voi pidentyä kuluttajansuojalain mukaisesti.</p>
+  <p>Pelkkä aktivointikoodin lähettäminen, aktivointi tai palvelun käyttö ei automaattisesti poista peruuttamisoikeutta. Mahdolliset lain mukaiset rajoitukset edellyttävät niiden kaikkien ehtojen täyttymistä. Digitaalista palvelua ja sähköisesti toimitettavaa digitaalista sisältöä koskevat peruuttamisoikeuden poikkeukset eivät ole samat.</p>
   <h2>Tee peruuttamisilmoitus</h2>
-
-  <p>
-    Voit ilmoittaa peruuttamisesta selkeästi sähköpostitse osoitteeseen
-    <a href="mailto:autosahkoapu@gmail.com">
-      autosahkoapu@gmail.com
-    </a>.
-    Kerro nimesi, ostamasi paketti, ostopäivä ja sähköpostiosoite,
-    jolla koodi tilattiin. Älä lähetä maksukorttitietoja.
-  </p>
-
-  <p>
-    Lähetämme peruuttamisilmoituksen vastaanottamisesta
-    vahvistuksen sähköpostilla.
-  </p>
-
-  <p>Voit käyttää esimerkiksi seuraavaa tekstiä:</p>
-
+  <p>Voit ilmoittaa peruuttamisesta yksiselitteisesti sähköpostitse osoitteeseen <a href="mailto:autosahkoapu@gmail.com">autosahkoapu@gmail.com</a>. Kerro nimi, ostettu käyttöoikeus, ostopäivä tai muu tilauksen yksilöivä tieto sekä sähköpostiosoite vastaanottovahvistusta varten. Syytä ei tarvitse ilmoittaa. Älä lähetä maksukorttitietoja. Tämä ei rajoita oikeutta käyttää muuta lain sallimaa yksiselitteistä ilmoitustapaa.</p>
+  <p>Vastaanottovahvistus lähetetään ilman aiheetonta viivytystä sähköpostitse. Se sisältää peruuttamisilmoituksen sisällön ja sen vastaanottopäivän ja -kellonajan. Vastaanottovahvistus ei ole edellytys ajoissa lähetetyn ilmoituksen pätevyydelle.</p>
+  <section id="verkossa-peruuttaminen" hidden>
+    <h2>Peruuta sopimus verkossa</h2>
+    <p>Anna yhteystietosi ja peruutettava tilaus. Tarkista tiedot ennen ilmoituksen lähettämisen vahvistamista. Kirjautumista tai aktivointikoodia ei vaadita.</p>
+    <form id="cancellation-form">
+      <label>Nimi <input name="name" autocomplete="name" maxlength="140" required></label>
+      <label>Sähköposti vastaanottovahvistukselle <input name="email" type="email" autocomplete="email" maxlength="254" required></label>
+      <label>Peruutettava tilaus (paketti ja ostopäivä tai tilausnumero) <textarea name="order" maxlength="300" rows="3" required></textarea></label>
+      <p>Älä kirjoita henkilötunnusta, maksukorttitietoja tai auton valmistenumeroa.</p>
+      <div id="cancellation-challenge"></div>
+      <button type="submit">Jatka tietojen tarkistamiseen</button>
+    </form>
+    <div id="cancellation-review" hidden>
+      <h3>Tarkista peruuttamisilmoitus</h3>
+      <pre id="cancellation-details"></pre>
+      <button id="cancellation-edit" type="button">Muokkaa tietoja</button>
+      <button id="cancellation-confirm" type="button">Vahvista peruuttamisilmoituksen lähettäminen</button>
+    </div>
+    <p id="cancellation-status" role="status" aria-live="polite"></p>
+  </section>
+  <h2>Palautus ja mahdollinen korvaus jo suoritetusta palvelusta</h2>
+  <p>Kun sopimus peruutetaan lainmukaisesti, maksut palautetaan ilman aiheetonta viivytystä ja viimeistään 14 päivän kuluessa peruuttamisilmoituksen vastaanottamisesta. Palautukseen käytetään samaa maksutapaa kuin ostoksessa, ellet nimenomaisesti hyväksy muuta tapaa. Palautuksesta ei aiheudu sinulle kustannuksia. Käyttöoikeus päättyy peruutuksen käsittelyn yhteydessä.</p>
+  <p>Jos kyseessä on palvelusopimus ja olet nimenomaisesti pyytänyt palvelun aloittamista peruuttamisaikana, lain edellytykset täyttävä kohtuullinen ja suhteellinen korvaus jo suoritetusta osuudesta voidaan vähentää palautuksesta. Korvausta ei peritä, jos tarvittavaa nimenomaista pyyntöä tai lakisääteisiä ennakkotietoja ei ole annettu. Pelkkä aktivointi, käytettyjen AI-vaiheiden määrä tai yleisten ehtojen hyväksyminen ei yksin oikeuta vähennykseen.</p>
+  <h2>Peruuttamisilmoituksen malli</h2>
+  <p>Voit käyttää alla olevaa mallia tai omaa yksiselitteistä ilmoitustasi. Mallin käyttö ei ole pakollista.</p>
   <blockquote>
-    Ilmoitan peruuttavani Autosähköapu AI -käyttöpaketin ostoa
-    koskevan sopimuksen.
-
-    Ostopäivä: __________<br>
-    Nimi: __________<br>
-    Sähköposti: __________
+    Vastaanottaja: Autosähköapu AI, asiakaspalvelu / Mikko Minkkinen, autosahkoapu@gmail.com<br><br>
+    Ilmoitan/ilmoitamme peruuttavani/peruuttavamme tekemäni/tekemämme sopimuksen, joka koskee seuraavan palvelun suorittamista:<br>
+    Palvelu / käyttöpaketti: __________<br>
+    Tilauspäivä: __________<br>
+    Tilausnumero tai muu yksilöivä tieto (jos tiedossa): __________<br>
+    Kuluttajan nimi / kuluttajien nimet: __________<br>
+    Kuluttajan osoite / kuluttajien osoitteet: __________<br>
+    Sähköposti vastaanottovahvistukselle: __________<br>
+    Päiväys: __________<br>
+    Allekirjoitus / allekirjoitukset (vain, jos ilmoitus tehdään paperilla): __________<br>
+    Poista tarpeettomat vaihtoehdot.
   </blockquote>
-
-  <h2>Rahojen palautus ja virhetilanteet</h2>
-
-  <p>
-    Kun lakisääteinen peruuttamisoikeus on käytössä, palautus ja
-    mahdollinen lain sallima vähennys käsitellään kuluttajansuojalain
-    mukaisesti. Maksunpalautus tehdään ilman aiheetonta viivytystä
-    ja pääsääntöisesti viimeistään 14 päivän kuluessa
-    peruuttamisilmoituksen saamisesta.
-  </p>
-
-  <p>
-    Jos aktivointikoodi ei saavu luvatusti, ei toimi tai
-    palvelussa on virhe, voit tehdä reklamaation samaan
-    sähköpostiosoitteeseen. Virhevastuuta koskevat kuluttajan
-    oikeudet eivät riipu yksinomaan peruuttamisajan kestosta.
-  </p>
-
+  <h2>Virhe tai viivästys</h2>
+  <p>Jos ostamasi käyttöoikeus ei saavu sovitusti, koodi ei toimi tai palvelussa on virhe, ilmoita ongelmasta asiakaspalveluun. Lakisääteinen virhevastuu ja oikeus reklamoida eivät pääty 14 päivän peruuttamisajan päättyessä. Lisätietoja on <a href="/kayttoehdot/">käyttöehdoissa</a>.</p>
 </main>
 
 <footer>
@@ -145,5 +136,7 @@
   <p>Autosähköapu AI · autosahkoapu@gmail.com</p>
 </footer>
 
+<script src="/config.js"></script>
+<script src="/peruuttaminen/cancellation.js" defer></script>
 </body>
 </html>
