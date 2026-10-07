@@ -160,14 +160,6 @@ function cleanCode(value = '') {
   return String(value).trim().toUpperCase();
 }
 
-function cleanVin(value = '') {
-  return String(value)
-    .trim()
-    .toUpperCase()
-    .replace(/[^A-HJ-NPR-Z0-9*]/g, '')
-    .slice(0, 17);
-}
-
 function remainingText(rec) {
   const credits = Math.max(0, rec.credits || 0);
 
@@ -591,7 +583,7 @@ function prepareConversation(
     item?.role === 'user' && item.caseData && item.formCaseData
   );
   if (previous) {
-    const fields = ['car', 'make', 'model', 'year', 'engine', 'dtc', 'vin'];
+    const fields = ['car', 'make', 'model', 'year', 'engine', 'dtc'];
     const formChanged = fields.some(key =>
       String(rawCase[key] || '').trim() !==
       String(previous.formCaseData[key] || '').trim()
@@ -659,7 +651,6 @@ function prepareConversation(
       year: extractYear(userMessage),
       engine: extractEngine(userMessage),
       dtc: parseDtcCodes(userMessage).join(', '),
-      vin: '',
       tools: Array.isArray(rawCase.tools)
         ? rawCase.tools
         : [],
@@ -1047,7 +1038,7 @@ async function getTechnicalContext(c, env) {
     dtcs,
     obdex
   ] = await Promise.all([
-    Promise.resolve(null), // NHTSA VIN lookup disabled pending transfer assessment.
+    Promise.resolve(null),
     lookupDtcs(c.dtc, env),
     lookupObdex(c.dtc, env)
   ]);
@@ -1070,80 +1061,6 @@ async function getTechnicalContext(c, env) {
     obdb,
     wal33d
   };
-}
-
-async function decodeVin(vinRaw, yearRaw) {
-  const vin = cleanVin(vinRaw);
-
-  if (vin.length < 11) {
-    return null;
-  }
-
-  const year = String(yearRaw || '')
-    .replace(/[^0-9]/g, '')
-    .slice(0, 4);
-
-  const url = new URL(
-    `https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValues/${encodeURIComponent(vin)}`
-  );
-
-  url.searchParams.set('format', 'json');
-
-  if (year) {
-    url.searchParams.set('modelyear', year);
-  }
-
-  try {
-    const response = await fetch(
-      url.toString(),
-      {
-        headers: {
-          'User-Agent': 'AutosahkoapuAI/1.0'
-        }
-      }
-    );
-
-    if (!response.ok) {
-      return {
-        source: 'NHTSA vPIC',
-        vin,
-        error: 'VIN-palvelu ei vastannut'
-      };
-    }
-
-    const raw = await response.json();
-    const result = raw?.Results?.[0] || {};
-
-    const value = key =>
-      String(result[key] || '').trim();
-
-    return {
-      source: 'NHTSA vPIC',
-      vin,
-      make: value('Make'),
-      model: value('Model'),
-      modelYear: value('ModelYear'),
-      trim: value('Trim'),
-      bodyClass: value('BodyClass'),
-      vehicleType: value('VehicleType'),
-      engineCylinders: value('EngineCylinders'),
-      displacementL: value('DisplacementL'),
-      fuelType: value('FuelTypePrimary'),
-      driveType: value('DriveType'),
-      plantCountry: value('PlantCountry'),
-      errorCode: value('ErrorCode'),
-      errorText: value('ErrorText')
-    };
-
-  } catch (e) {
-    console.error('vin_lookup_failed');
-
-    return {
-      source: 'NHTSA vPIC',
-      vin,
-      error: 'VIN-haku epäonnistui'
-    };
-  }
 }
 
 // Autodiag2 / Cloudflare D1.
@@ -2068,34 +1985,6 @@ async function lookupWal33d(raw, env) {
 
 function sourceSummary(ctx) {
   const sources = [];
-
-  if (
-    ctx?.vehicle?.make ||
-    ctx?.vehicle?.model
-  ) {
-    sources.push({
-      name: 'VIN',
-      provider: 'NHTSA vPIC',
-      ok: true,
-      detail: [
-        ctx.vehicle.modelYear,
-        ctx.vehicle.make,
-        ctx.vehicle.model
-      ]
-        .filter(Boolean)
-        .join(' ')
-    });
-  } else if (ctx?.vehicle) {
-    sources.push({
-      name: 'VIN',
-      provider: 'NHTSA vPIC',
-      ok: false,
-      detail:
-        ctx.vehicle.error ||
-        ctx.vehicle.errorText ||
-        'Rajallinen tulos'
-    });
-  }
 
   const found = (ctx?.dtcs || [])
     .filter(item => item.available);
@@ -3155,12 +3044,7 @@ DATALÄHDEHIERARKIA
 ja DTC-lähdedataa vain siinä laajuudessa,
 kuin se todella tukee esitettyä väitettä.
 
-2) NHTSA vPIC voi auttaa VIN-tunnistuksessa,
-mutta se ei ole korjaus- tai mittausarvotietokanta.
-
-NHTSA ei välttämättä tunnista eurooppalaista VINiä.
-Puutteellinen VIN-tulos ei kumoa käyttäjän
-ilmoittamia ajoneuvotietoja.
+2) Ajoneuvon tunnistus perustuu käyttäjän ilmoittamiin tietoihin. Tarkista epäselvä merkki, malli, vuosimalli ja moottoriversio käyttäjältä.
 
 3) Autodiag2:n DTC-määritelmä auttaa tulkitsemaan
 vikakoodia, mutta ei todista juurisyytä.
@@ -3377,10 +3261,6 @@ function buildPrompt(
     })
     .join('\n');
 
-  const vehicle = context?.vehicle
-    ? JSON.stringify(context.vehicle)
-    : 'VIN-lähdedataa ei ole.';
-
   const dtcs = context?.dtcs?.length
     ? JSON.stringify(context.dtcs)
     : 'Autodiag2-lähdedataa ei ole tälle pyynnölle.';
@@ -3434,10 +3314,6 @@ TUNNISTETTU MALLI:
 
 ${c.model || '-'}
 
-VIN:
-
-${cleanVin(c.vin) || '-'}
-
 VUOSIMALLI:
 
 ${c.year || '-'}
@@ -3467,7 +3343,7 @@ ja tavoitearvot vaativat erikseen ajoneuvolle varmennetun teknisen lähteen.
 OEM_DIAGNOSTIC_DATA: tässä integraatiossa ei ole automaattisesti
 varmennettua OEM-testipalvelujen, adaptaatioiden tai koodausten lähdettä.
 OBDb-signaalin tai Wal33D/Autodiag2-DTC:n löytyminen ei varmista näitä
-toimintoja tai niiden soveltuvuutta tähän ajoneuvoon. VIN on tunnistustietoa.
+toimintoja tai niiden soveltuvuutta tähän ajoneuvoon.
 
 MERKKIKOHTAISEN DIAGNOSTIIKAN RAJAT — MUISTUTUS:
 Älä keksi PID:eja, CAN-ID:tä, ECU-pinnien toimintoja, toimilaitetestejä,
@@ -3484,10 +3360,6 @@ laajempaan testeriin. Jo ilmoitettu laajempi testeri: kysy toiminnon tukea.
 ilman lähdevarmennusta; käytä yleisnimeä kuten moottorinohjainlaite.
 
 ULKOINEN LÄHDEDATA:
-
-VIN / NHTSA vPIC:
-
-${vehicle}
 
 DTC / Autodiag2:
 
