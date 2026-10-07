@@ -72,100 +72,49 @@
 </header>
 
 <main>
+<h1>Tietosuojaseloste</h1>
+<p>Päivitetty 7.10.2026. Tämä seloste koskee Autosähköapu AI -verkkopalvelua.</p>
+<h2>1. Rekisterinpitäjä</h2>
+<p>Mikko Minkkinen / Autosähköapu AI, kevytyrittäjä. Yhteydenotot ja tietosuojapyynnöt: <a href="mailto:autosahkoapu@gmail.com">autosahkoapu@gmail.com</a>. Palvelun myynti ja laskutus tapahtuvat Eezy-palvelun kautta. Eezy ei tämän vuoksi ole auton vianetsintäkeskustelujen rekisterinpitäjä.</p>
+<h2>2. Mitä tietoja käsitellään ja miksi?</h2>
+<ul>
+<li>Antamasi ajoneuvotiedot, oireet, vikakoodit, mittaustulokset, keskustelu ja liitteet käsitellään pyytämäsi vianetsintäavun tuottamiseksi. Oikeusperuste on sopimuksen täyttäminen tai pyynnöstäsi tehtävät sopimusta edeltävät toimet (GDPR 6 artikla 1 b).</li>
+<li>Aktivointikoodi, paketti, voimassaoloaika, käyttökertojen määrä, jäljellä oleva käyttöoikeus ja viimeinen käyttöaika käsitellään käyttöoikeuden toteuttamiseksi samalla perusteella. Koodin toimitukseen tai hallintaan voi liittyä yhteystieto tai hallinnollinen muistiinpano.</li>
+<li>Sähköposti ja asiakaspalveluviestit käsitellään ostoksen, toimituksen ja asiakaspalvelun hoitamiseksi. Lakisääteisiä tositteita käsitellään lain noudattamiseksi (6 artikla 1 c). Mahdollisten vaatimusten selvittäminen ja tietoturvan ylläpito perustuvat oikeutettuun etuun (6 artikla 1 f): palvelun suojaamiseen ja oikeusvaateiden käsittelyyn.</li>
+<li>Verkkopalvelun teknisissä lokitiedoissa voi olla esimerkiksi IP-osoite, pyyntöosoite, ajankohta, vastaustila ja virhetieto. Niitä käytetään palvelun toiminnan ja tietoturvan ylläpitoon oikeutetun edun perusteella.</li>
+</ul>
+<p>Tiedot saadaan sinulta ja palvelun käytöstä. Älä anna henkilötunnusta, maksukorttitietoja, tarpeettomia henkilötietoja tai sivullisten tietoja. Poista kuvista esimerkiksi kasvot ja rekisteritunnukset, jos niitä ei tarvita. Ajoneuvon VIN-tunnuskin voi olla henkilötieto, jos se voidaan yhdistää henkilöön. VIN ei ole pakollinen.</p>
+<p>Vianetsintä edellyttää riittäviä tietoja auton oireista. Maksullinen palvelu edellyttää käyttöoikeutta. Jos tarpeellisia tietoja ei anneta, vastausta, tilausta tai sen selvittämistä ei välttämättä voida toteuttaa.</p>
+<h2>3. Kenelle tietoja välitetään?</h2>
+<ul>
+<li><strong>GitHub Pages</strong> palvelee verkkosivun ja käsittelee verkkoyhteyden teknisiä tietoja.</li>
+<li><strong>Cloudflare</strong> käsittelee rajapintapyynnöt. KV ja Durable Objects säilyttävät aktivointikoodien ja käytön tiedot. Palvelun omaan diagnostiikkatietokantaan ei tallenneta asiakkaiden keskusteluja tai kuvia.</li>
+<li><strong>OpenAI</strong> saa tekoälyvastauksen muodostamiseen lähetetyt ajoneuvotiedot, oireet, mittaustulokset, kyseisen keskustelun aiemmat viestit ja lähetetyt liitteet. Rajapintapyyntö käyttää asetusta <code>store: false</code>. OpenAI ei oletusarvoisesti käytä API-sisältöjä mallien kouluttamiseen. Asetus ei tarkoita kaiken teknisen tai väärinkäytösten torjuntaan liittyvän säilytyksen poistumista.</li>
 
-  <h1>Tietosuojaseloste</h1>
-
-  <p>Päivitetty 19.9.2026</p>
-
-  <h2>Rekisterinpitäjä ja yhteys</h2>
-
-  <p>
-    Autosähköapu AI:n kehittäjä ja yhteyshenkilö on Mikko Minkkinen,
-    kevytyrittäjä. Laskutan Eezy-palvelun kautta EezyPay-maksulinkeillä.
-    Tietosuoja-asiat:
-    <a href="mailto:autosahkoapu@gmail.com">
-      autosahkoapu@gmail.com
-    </a>.
-  </p>
-
-  <h2>Käsiteltävät tiedot ja tarkoitus</h2>
-
-  <p>
-    Palvelussa käsitellään käyttäjän itse syöttämiä auton tietoja,
-    oireita, vikakoodeja, mittaustuloksia, viestejä ja mahdollisia
-    liitteitä diagnoosivastauksen tuottamiseksi.
-    Aktivointikoodia, sen käyttömääriä sekä aktivointia ja voimassaoloa
-    koskevia tietoja käsitellään käyttöoikeuden toteuttamiseksi.
-    Asiakkaan sähköpostia sekä maksun ja koodin toimituksen tietoja
-    käsitellään ostoksen toteuttamiseksi, asiakaspalvelua ja
-    lakisääteisten velvoitteiden hoitamista varten.
-  </p>
-
-  <p>
-    Älä syötä tarpeettomia henkilötietoja tai muiden henkilöiden
-    tietoja viestikenttään tai liitteisiin.
-  </p>
-
-  <h2>Palveluntarjoajat ja tallennus</h2>
-
-  <p>
-    Verkkosivu sijaitsee GitHub Pagesissa.
-    Cloudflare Worker välittää maksullisen diagnoosipyynnön ja
-    Cloudflare KV ylläpitää aktivointikoodien käyttöoikeustietoja.
-    Vastauksen tuottamisessa käytetään OpenAI:n rajapintaa.
-  </p>
-
-  <p>
-    Maksun käsittely ja sen yhteydessä annetut tiedot hoidetaan
-    EezyPay-maksupalvelussa; sen oma tietosuojaseloste löytyy
-    maksusivulta.
-  </p>
-
-  <p>
-    Selaimessa säilytetään paikallisesti aktivointikoodi ja
-    ilmaisen kokeilun käytön tila.
-    Sivustolla on ollut Google Analytics -koodi;
-    sen käyttö ja suostumuksenhallinta pitää tarkistaa erikseen.
-  </p>
-
-  <h2>Oikeusperusteet ja säilytys</h2>
-
-  <p>
-    Diagnoosin ja käyttöoikeuden toteuttamiseen tarvittavia tietoja
-    käsitellään sopimuksen täyttämiseksi.
-    Lakisääteisten kirjanpito- ja muiden velvoitteiden edellyttämiä
-    tietoja käsitellään lain noudattamiseksi.
-    Mahdollinen ei-välttämätön analytiikka edellyttää
-    soveltuvaa suostumusta.
-  </p>
-
-  <p>
-    Tietoja säilytetään vain tarpeellisen ajan kunkin
-    käsittelytarkoituksen ja lain edellyttämällä tavalla.
-    Täsmälliset säilytysajat sekä palveluntarjoajien käytännöt
-    on vielä vahvistettava ennen maksullista julkaisua.
-  </p>
-
-  <h2>Oikeutesi</h2>
-
-  <p>
-    Voit pyytää pääsyä henkilötietoihisi, oikaisua, poistoa,
-    käsittelyn rajoitusta ja soveltuvissa tilanteissa
-    tietojen siirtoa tai vastustaa käsittelyä.
-    Voit peruuttaa mahdollisen suostumuksesi.
-  </p>
-
-  <p>
-    Lähetä pyyntö osoitteeseen
-    <a href="mailto:autosahkoapu@gmail.com">
-      autosahkoapu@gmail.com
-    </a>.
-  </p>
-
-  <p>
-    Voit tehdä kantelun tietosuojavaltuutetulle:
-    <a href="https://tietosuoja.fi/">tietosuoja.fi</a>.
-  </p>
+<li><strong>Eezy ja maksupalvelun toimijat</strong> käsittelevät maksusivulle antamasi maksamis- ja laskutustiedot omien tietosuojaselosteidensa mukaisesti. Korttitietoja ei syötetä Autosähköapu AI:n diagnoosikeskusteluun.</li>
+<li><strong>Google Gmail</strong> välittää asiakaspalveluun sähköpostitse lähettämäsi viestit ja niiden liitteet.</li>
+</ul>
+<p>Palvelussa ei kerätä asiakaskeskusteluista omaa opetusaineistoa eikä niitä julkaista muiden käyttäjien nähtäväksi. Tietoja voidaan luovuttaa viranomaiselle, jos laki sitä edellyttää.</p>
+<h2>4. Käsittely EU:n ja ETA:n ulkopuolella</h2>
+<p>Edellä mainitut kansainväliset palveluntarjoajat voivat käsitellä tietoja myös EU:n ja ETA:n ulkopuolella, esimerkiksi Yhdysvalloissa. OpenAI:n ja Cloudflaren käsittelysopimuksissa kuvataan kansainvälisten siirtojen suojatoimet, kuten soveltuvat EU:n vakiosopimuslausekkeet tai riittävyyspäätös. Lisätietoja ja tietoja soveltuvista suojatoimista voi pyytää rekisterinpitäjältä.</p>
+<p><a href="https://openai.com/policies/data-processing-addendum/">OpenAI:n käsittelysopimus</a> · <a href="https://www.cloudflare.com/cloudflare-customer-dpa/">Cloudflaren käsittelysopimus</a> · <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHubin tietosuojaseloste</a> · <a href="https://policies.google.com/privacy?hl=fi">Googlen tietosuojaseloste</a>. Erillinen NHTSA:n VIN-haku on poistettu käytöstä. VIN-tunnusta ei lähetetä tähän palveluun.</p>
+<h2>5. Säilytysajat</h2>
+<ul>
+<li><strong>Keskustelut ja kuvat:</strong> keskusteluhistoria on sivun käytön aikana selaimen muistissa. Sitä ei tallenneta palvelun omaan asiakasrekisteriin. Lähetetty aineisto kuitenkin käsitellään yllä mainituilla palveluntarjoajilla.</li>
+<li><strong>Aktivointikoodit ja käyttötiedot:</strong> poistetaan viimeistään 90 päivän kuluessa koodin vanhenemisesta. Tämä on rekisterinpitäjän toteuttama poistokäytäntö; koodin vanheneminen ei itsessään poista tietokantatietuetta automaattisesti.</li>
+<li><strong>Asiakaspalveluviestit:</strong> poistetaan viimeistään 12 kuukauden kuluessa asian päättymisestä. Lakisääteinen velvoite tai avoin riita voi edellyttää kyseiseen asiaan liittyvien tietojen pidempää säilyttämistä. Tällöin säilytetään vain tarpeelliset tiedot.</li>
+<li><strong>OpenAI:</strong> oletusarvoiset väärinkäytösten torjuntalokit voivat sisältää lähetettyä aineistoa enintään 30 päivää, ellei laki edellytä pidempää säilytystä. Palvelulla ei ole vahvistettua Zero Data Retention -asetusta. Teknisiin välimuisteihin ja esimerkiksi kuvien turvallisuustarkistuksiin voi liittyä erillisiä säilytyskäytäntöjä. Katso <a href="https://developers.openai.com/api/docs/guides/your-data">OpenAI:n tiedonkäsittelykuvaus</a>.</li>
+<li><strong>Cloudflaren Worker-lokit:</strong> nykyisen ilmaispaketin lokien säilytysaika on kolme päivää. Sovelluksen omat virhelokit eivät tarkoituksella sisällä keskustelua tai liitteitä. Verkkopalveluntarjoajien omiin turvallisuuslokeihin sovelletaan niiden käytäntöjä.</li>
+<li><strong>Maksu- ja kirjanpitotiedot:</strong> niitä koskevat erilliset lakisääteiset säilytysvelvoitteet ja Eezy-palvelun käytännöt.</li>
+</ul>
+<h2>6. Selaimen paikallinen tallennus</h2>
+<p>Selaimen paikalliseen tallennukseen jää aktivointikoodi (<code>asai_access_code</code>) ja ilmaisen kokeilun käytön tila (<code>asai_free_used</code>) pyytämäsi palvelun ja käyttöoikeuden toteuttamiseksi. Niillä ei ole omaa automaattista aikakatkaisua. Voit poistaa ne selaimen sivustotietojen tyhjennyksellä; tällöin aktivointikoodi on annettava uudelleen. Keskusteluhistoriaa ei tallenneta näihin tietoihin. Etusivulla ei ole Google Analytics -seurantaa.</p>
+<h2>7. Suojaus ja tekoälyn käyttö</h2>
+<p>Tiedot siirretään salatulla HTTPS-yhteydellä. Hallintatoiminnot on suojattu, ja pääsy tietoihin rajataan palvelun ylläpidon edellyttämään käyttöön. Tekoäly antaa vianetsintäehdotuksia; se ei tee sinua koskevia oikeudellisia tai vastaavalla tavalla merkittäviä automaattisia päätöksiä. Arvioi ehdotukset kriittisesti ja noudata ajoneuvon turvallisuusohjeita.</p>
+<h2>8. Oikeutesi ja yhteydenotto</h2>
+<p>Voit pyytää pääsyä henkilötietoihisi, niiden oikaisua, poistoa tai käsittelyn rajoittamista. Sopimukseen tai suostumukseen perustuvia automaattisesti käsiteltäviä tietoja voi pyytää siirrettäväksi soveltuvin osin. Voit vastustaa oikeutettuun etuun perustuvaa käsittelyä omaan tilanteeseesi liittyvällä perusteella. Oikeuksien soveltuminen arvioidaan tietosuojalainsäädännön mukaisesti.</p>
+<p>Lähetä pyyntö osoitteeseen <a href="mailto:autosahkoapu@gmail.com">autosahkoapu@gmail.com</a>. Pyynnön toteuttamiseksi voidaan pyytää tarpeellinen tunnistustieto; älä lähetä henkilötunnusta. Vastaamme yleensä kuukauden kuluessa. Jos määräaikaa on tarpeen jatkaa lain sallimalla tavalla, ilmoitamme siitä ja syystä kuukauden kuluessa.</p>
+<p>Jos katsot käsittelyn rikkovan tietosuojasääntöjä, voit saattaa asian <a href="https://tietosuoja.fi/ilmoitus-tietosuojavaltuutetulle">tietosuojavaltuutetun käsiteltäväksi</a>. Tämä ei edellytä, että otat ensin yhteyttä meihin.</p>
 
 </main>
 
