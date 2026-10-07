@@ -1,0 +1,13 @@
+{
+  "name": "autosahkoapu-peruuttaminen",
+  "main": "cancellation-worker.js",
+  "compatibility_date": "2026-10-07",
+  "workers_dev": true,
+  "keep_vars": true,
+  "observability": { "enabled": false },
+  "vars": { "ALLOWED_ORIGIN": "https://autosahkoapu.fi" },
+  "durable_objects": {
+    "bindings": [{ "name": "WITHDRAWAL_INBOX", "class_name": "WithdrawalInbox" }]
+  },
+  "migrations": [{ "tag": "v1-withdrawal-inbox", "new_sqlite_classes": ["WithdrawalInbox"] }]
+}
