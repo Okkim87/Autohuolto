@@ -37,5 +37,5 @@ const request = () => new Request('https://test/diagnose', { method: 'POST', bod
   const calls = [...source.matchAll(/console\.error\(([\s\S]*?)\);/g)];
   for (const call of calls) assert.match(call[1], /^'[a-z_]+'(?:, response\.status)?$/);
   assert.ok(!fs.readFileSync('index.html', 'utf8').includes('googletagmanager'));
-  console.log('PASS: store=false, history, credit behavior, sensitive upstream error redaction, all explicit log sites and Analytics removal. Mock API only.');
+  console.log('PASS: store=false, history, credit behavior, sensitive upstream error redaction, all explicit log sites and absence of unconditional Analytics tags. Mock API only.');
 })().catch(e => { console.error(e); process.exitCode = 1; });
