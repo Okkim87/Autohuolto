@@ -32,8 +32,8 @@ kuvaa Braven hakukyselyjen käsittelyn. WEB_SEARCH_ENABLED on true.
 
 ## Kulutus ja tiedot
 
-- Enintään yksi Brave-haku käyttäjän nimenomaista hakupyyntöä kohti.
-  `/lookup` ei tee verkkohakua. Tavalliset diagnoosiviestit eivät tee sitä.
+- Enintään yksi Brave-haku käyttäjän nimenomaista hakupyyntöä tai teknistä väyläkysymystä kohti.
+  `/lookup` ei tee verkkohakua. Muut tavalliset diagnoosiviestit eivät tee sitä.
 - Kaikille käyttäjille yhteinen raja on 800 yritystä liukuvan 32 päivän
   aikana: tämä on varovaisempi kuin kalenterikuukausittainen 800 raja.
   Myös epäonnistuneet ja aikakatkaistut yritykset kuluttavat kiintiötä.
@@ -70,3 +70,21 @@ tietojen minimoinnin, promptin lähderajat, linkit, rinnakkaiset haut,
 800 yrityksen rajan, tallennusvirheen ja aikaleimojen poistumisen.
 Se ei varmista todellisia hakutuloksia, tilin laskutusta tai live-AI:n
 vastausten laatua. Käyttöönotto vaatii erillisen live-testin.
+
+## Teknisten ajoneuvoverkkojen haku
+
+FlexRay-, CAN-, CAN FD-, LIN-, MOST- ja Automotive Ethernet -kysymykset
+käynnistävät teknisen haun ilman erillistä etsi netistä -pyyntöä. Kysely
+käyttää vain valmiita väylä- ja mittaustermejä, ei raakaa keskustelua.
+Tunnistamaton auto ei estä yleisen standarditiedon hakua; vastauksessa
+ei silti saa väittää tiedon olevan tämän auton mittausohje.
+Haku etsii teknistä dokumentaatiota foorumipainotuksen sijaan. Saatavilla
+on edelleen vain hakutulosotteet, ei kokonaisia tarkistettuja dokumentteja.
+Tämä ei anna pääsyä suljettuihin korjaamojärjestelmiin.
+
+Automaattinen haku laajennettu tunnistettuihin oireisiin ja uusiin vikasuuntiin.
+Peräkkäiset samat kanoniset hakutermit eivät aiheuta uutta hakua;
+nimenomainen hakupyyntö voi uusia haun. Lyhyet kuittaukset ja hakukielto
+eivät tee hakua. Tunnistus perustuu rajattuun ennalta määrättyyn sanastoon,
+joten se ei tunnista kaikkia vapaamuotoisia vikoja. Tuntematonta tekstiä
+ei lähetetä sellaisenaan Braveen. Kiintiö säilyy 800 yrityksessä / 32 päivää.

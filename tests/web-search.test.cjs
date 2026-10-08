@@ -43,6 +43,27 @@ const message = 'Etsi netistä vastaavaa oiretta';
   for (const term of ['Ford', 'Mondeo', '2010', '2.0', 'petrol', 'cold start', 'no throttle response', 'restart restores response']) assert.ok(query.includes(term), query);
   for (const token of ['Mikko', 'PRIVATE', 'example.com', 'ASAI', 'ABC-123', 'Unused']) assert.ok(!query.includes(token));
   assert.equal(api.buildWebSearchQuery({ car: privateText }, [], message), '');
+  for (const question of [
+    'Mikä FlexRay-verkon jännite pitäisi olla?',
+    'Miten CAN FD päätevastus mitataan?',
+    'LIN-verkon kuormitustaso, mikä on normaali?',
+    'Miten MOST-verkko toimii?',
+    'Miten Automotive Ethernet aaltomuoto tutkitaan?'
+  ]) {
+    assert.equal(api.wantsWebSearch(question), true, question);
+    const technicalQuery = api.buildWebSearchQuery(car, history, question + ' ' + privateText);
+    assert.ok(technicalQuery.includes('technical documentation'));
+    assert.ok(!technicalQuery.includes('owners forum'));
+    assert.ok(!technicalQuery.includes('cold start'), 'old symptoms must not distract a network query');
+    for (const token of ['Mikko','PRIVATE','example.com','ASAI','ABC-123']) assert.ok(!technicalQuery.includes(token));
+  }
+  assert.equal(api.wantsWebSearch('Älä etsi FlexRay jännitteitä netistä'), false);
+  assert.equal(api.wantsWebSearch('Minulla on CAN-testeri'), false);
+  const genericNetworkQuery = api.buildWebSearchQuery({car:privateText}, [], 'Miten FlexRay toimii?');
+  assert.ok(genericNetworkQuery.includes('FlexRay'));
+  assert.ok(!genericNetworkQuery.includes('Mikko'));
+  const followupQuery = api.buildWebSearchQuery(car, [{role:'user',text:'Mikä FlexRay päätevastus pitäisi olla?'}], 'Etsi netistä');
+  assert.ok(followupQuery.includes('termination resistance'));
   const disabled = await api.lookupWebExperiences(car, history, message, {});
   assert.equal(disabled.status, 'not_configured');
   assert.equal(requests.length, 0);
@@ -63,6 +84,20 @@ const message = 'Etsi netistä vastaavaa oiretta';
   assert.match(api.SYSTEM_PROMPT, /ei.{0,120}OEM_DIAGNOSTIC_DATA-varmennus/s);
   const sources = api.sourceSummary({ webSearch: results });
   assert.ok(sources.some(item => item.url === 'https://forum.example/thread/1' && item.name.includes('varmentamaton')));
+  const beforeAuto = requests.length;
+  const firstFault = await api.lookupWebExperiences(car, [], 'Kylmänä ei vastaa kaasuun', env);
+  assert.equal(firstFault.status, 'found');
+  assert.equal(requests.length, beforeAuto + 1);
+  const repeatedFault = await api.lookupWebExperiences(car, [{role:'user',text:'Kylmänä ei vastaa kaasuun'}], 'Kylmänä ei vastaa kaasuun', env);
+  assert.equal(repeatedFault.status, 'not_requested');
+  assert.equal(requests.length, beforeAuto + 1);
+  const newDirection = await api.lookupWebExperiences(car, [{role:'user',text:'Kylmänä ei vastaa kaasuun'}], 'Lataus ei toimi, epäilen maadoitusta', env);
+  assert.equal(newDirection.status, 'found');
+  const noSearch = await api.lookupWebExperiences(car, [], 'Älä etsi netistä. Kylmänä ei vastaa kaasuun', env);
+  assert.equal(noSearch.status, 'not_requested');
+  const noAckSearch = await api.lookupWebExperiences(car, history, 'Kiitos', env);
+  assert.equal(noAckSearch.status, 'not_requested');
+  assert.equal(api.buildWebSearchQuery(car, [], 'Hei olen Mikko'), '');
   const now = Date.now();
   attempts = Array(798).fill(now);
   requests = [];

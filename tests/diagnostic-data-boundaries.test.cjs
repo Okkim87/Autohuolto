@@ -52,3 +52,28 @@ assert.equal(scope.check.sourceSummary({}).length, 0);
 assert.match(SYSTEM_PROMPT, /Älä oleta akun vaihtoa/);
 assert.match(SYSTEM_PROMPT, /ohjausvikakoodi ei yksin sulje pois nykyistä/);
 console.log('PASS: five diagnostic prompt regressions and populated-source boundaries. These tests verify prompt policy, not live model responses.');
+
+// These regressions verify supplied instructions, not generated model behaviour.
+for (const input of [
+ 'BMW FlexRay: mittasin yleismittarilla johdon ja maan väliltä. Onko väylä kunnossa?',
+ 'Audi FlexRay: mikä päätevastus ja jännite pitäisi mitata?',
+ 'Voinko käyttää CAN-väylän vastussääntöä FlexRayhin?',
+ 'LIN-verkon kuormitustaso on korkea, onko se vika?',
+ 'Foorumilla toisessa autossa mitattiin eri jännite. Onko minun autoni rikki?',
+ 'Selitä FlexRay-verkon yleinen toimintaperiaate.'
+]) {
+ const prompt=buildPrompt({car:'BMW',year:'2012',tools:['Yleismittari']},[],input,{});
+ assert.ok(prompt.includes(input));
+ assert.match(prompt,/VÄYLÄMITTAUSTEN MUISTUTUS/);
+ assert.match(prompt,/Älä keksi jännitteitä/);
+ assert.match(prompt,/mittauspiste/);
+ assert.match(prompt,/toimintatila/);
+ assert.match(prompt,/Foorumilukema ei/);
+ assert.match(prompt,/älä automaattisesti testeriä/);
+}
+assert.match(SYSTEM_PROMPT,/AJONEUVOVERKKOJEN MITTAUSTEN TULKINTA/);
+assert.match(SYSTEM_PROMPT,/liikenteen\nkäyttöastetta vai sähköistä kuormaa/);
+assert.match(SYSTEM_PROMPT,/Vastusmittaus edellyttää jännitteettömyyden/);
+assert.match(SYSTEM_PROMPT,/Yleisen toimintaperiaatteen voi selittää suoraan/);
+assert.match(SYSTEM_PROMPT,/Standardi tai transceiverin datalehti ei yksin varmista/);
+console.log('PASS: six network-measurement prompt regressions. No live model assertions.');
