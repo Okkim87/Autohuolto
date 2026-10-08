@@ -1,7 +1,8 @@
 # Verkkohaku vianetsinnän tueksi
 
-Valmisteltu 8.10.2026. Toiminto on pois käytöstä, kunnes oma Brave-tili,
-avain, maksuttomat hyvitykset ja tietosuojakäytännöt on tarkistettu.
+Käyttöönotto 8.10.2026: tilin kuvista tarkistettu Search-palvelun 5 USD
+maksuton kuukausihyvitys ja pois kytketty Auto-reload. Tietosuojaseloste
+kuvaa Braven hakukyselyjen käsittelyn. WEB_SEARCH_ENABLED on true.
 
 ## Käyttöönotto
 
