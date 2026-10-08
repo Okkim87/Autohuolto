@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync('Cloudflare-woker/worker.js', 'utf8')
+  .replace(/^import .*;\r?\n/gm, '')
   .replace('export default {', 'const worker = {')
   .replace(/export class /g, 'class ');
 const context = vm.createContext({ console, Response, Request, URL, crypto });

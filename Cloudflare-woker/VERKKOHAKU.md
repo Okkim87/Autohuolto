@@ -88,3 +88,31 @@ nimenomainen hakupyyntö voi uusia haun. Lyhyet kuittaukset ja hakukielto
 eivät tee hakua. Tunnistus perustuu rajattuun ennalta määrättyyn sanastoon,
 joten se ei tunnista kaikkia vapaamuotoisia vikoja. Tuntematonta tekstiä
 ei lähetetä sellaisenaan Braveen. Kiintiö säilyy 800 yrityksessä / 32 päivää.
+
+## Alkuperäisten lähteiden lukeminen (8.10.2026)
+
+Nykyinen toteutus lukee enintään kaksi hakutulosta ennalta sallituilta
+julkisilta tekniikka- ja yhteisösivustoilta. Tämä korvaa yllä olevan
+vanhemman kuvauksen, jonka mukaan kohdesivuja ei lueta.
+
+- Lukeminen toimii kaikissa tunnistetuissa vikasuunnissa, ei vain väylissä.
+- HTTPS ja sallittu julkaisijadomain vaaditaan myös uudelleenohjauksissa.
+  Query-parametreja sisältäviä URL:eja ei ladata; uusia kohdelinkkejä ei seurata.
+- Robots-ohje tarkistetaan, kirjautumista ja estoa ei ohiteta.
+- Enintään 512 KiB / dokumentti, kahdeksan ensimmäistä PDF-sivua, kolme
+  1400 merkin otetta / dokumentti. Ajallinen latausraja 8 sekuntia / lähde.
+- PDF-teksti poimitaan unpdf 1.8.1:llä WebSearchBudget Durable Objectissa;
+  kaavioiden kuvia ei tulkita ja taulukkokohdistuksen epävarmuus ilmoitetaan.
+- Lähteessä näkyy otsikko tai PDF-sivu, lukutila ja käsitellyn sisällön rajat.
+- Luettu ei tarkoita autokohtaisesti varmennettua. Malli, versio, järjestelmä,
+  mittauspiste ja olosuhteet arvioidaan ennen tarkan tavoitearvon käyttöä.
+- Dokumentin estyminen ei estä tavallista diagnostiikkaa.
+- Ei uutta maksullista API:a, ei lisää Brave-hakuja dokumenttien lukemista
+  varten, ei pysyvää dokumenttivarastoa. Normaali OpenAI/Cloudflare-käyttö jatkuu.
+
+Asennus: suorita Cloudflare-woker-hakemistossa `npm.cmd ci --ignore-scripts`.
+Julkaisu sisältää sekä worker.js:n että source-reader.mjs:n ja npm-riippuvuuden.
+Pelkkä muokkaamattoman worker.js:n kopio editoriin ei enää riitä; Wrangler
+paketoi riippuvuuden mukaan. Kun julkaistaan ready-hakemistosta, kopioi sinne
+myös source-reader.mjs, package.json ja package-lock.json ja asenna riippuvuus.
+Testi: `node tests/source-reader.test.cjs` (oikea PDF-poiminta, mock-lataukset).
