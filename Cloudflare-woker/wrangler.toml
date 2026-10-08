@@ -37,7 +37,7 @@ new_sqlite_classes = ["AccessGate"]
 
 # Optional Brave search. Keep disabled until free credits and keys are verified.
 [vars]
-WEB_SEARCH_ENABLED = "false"
+WEB_SEARCH_ENABLED = "true"
 
 [[durable_objects.bindings]]
 name = "WEB_SEARCH_BUDGET"
