@@ -66,7 +66,7 @@
   const panel = document.createElement('section');
   panel.className = 'analytics-choice';
   panel.setAttribute('aria-label', 'Analytiikan valinta');
-  panel.innerHTML = '<h2>Sallitko kävijätilastot?</h2><p>Google Analytics auttaa meitä ymmärtämään sivuston käyttöä. Hyväksyessäsi Google käsittelee selaimen ja käyntien tietoja sekä käyttää analytiikkaevästeitä. Kieltäytyminen ei vaikuta AI-palvelun käyttöön. Valinta muistetaan 180 päivää. <a href="/tietosuoja/">Tietosuojaseloste</a></p><div class="analytics-choice-actions"><button type="button" data-choice="granted">Hyväksy analytiikka</button><button type="button" data-choice="denied">Vain välttämättömät</button></div><button type="button" class="analytics-choice-close" hidden>Sulje muuttamatta</button><p class="analytics-choice-status" aria-live="polite"></p>';
+  panel.innerHTML = '<h2>Sallitko kävijätilastot?</h2><p>Sallitko Google Analyticsin analytiikkaevästeet kävijätilastoihin? Palvelu toimii myös ilman niitä. <a href="/tietosuoja/">Tietosuojaseloste</a></p><div class="analytics-choice-actions"><button type="button" data-choice="granted">Hyväksy analytiikka</button><button type="button" data-choice="denied">Vain välttämättömät</button></div><button type="button" class="analytics-choice-close" hidden>Sulje muuttamatta</button><p class="analytics-choice-status" aria-live="polite"></p>';
   const close = panel.querySelector('.analytics-choice-close');
   const settings = document.createElement('button');
   settings.type = 'button';
