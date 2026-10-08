@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const workerSource = fs.readFileSync('Cloudflare-woker/worker.js', 'utf8')
+  .replace(/^import .*;\r?\n/gm, '')
   .replace('export default {', 'const worker = {').replace(/export class /g, 'class ');
 let attempts = [], requests = [], fail = false, alarm, storageFails = false;
 const storage = {
@@ -9,7 +10,7 @@ const storage = {
   put: async (_, value) => { if (storageFails) throw new Error('mock storage failed'); attempts = [...value]; },
   setAlarm: async value => { alarm = value; }, delete: async () => { attempts = []; }
 };
-const scope = vm.createContext({ Request, Response, URL, crypto, AbortSignal, console,
+const scope = vm.createContext({ readOriginalSources: async results => results, Request, Response, URL, crypto, AbortSignal, console,
   fetch: async (url, options) => {
     requests.push({ url, options });
     if (fail) throw new Error('private upstream error');
@@ -98,6 +99,12 @@ const message = 'Etsi netistä vastaavaa oiretta';
   const noAckSearch = await api.lookupWebExperiences(car, history, 'Kiitos', env);
   assert.equal(noAckSearch.status, 'not_requested');
   assert.equal(api.buildWebSearchQuery(car, [], 'Hei olen Mikko'), '');
+  const savedReader = scope.readOriginalSources;
+  scope.readOriginalSources = async () => { throw new Error('untrusted document parse error'); };
+  const documentFailure = await api.lookupWebExperiences(car, [], 'Etsi netistä kylmäkäynnin oiretta', env);
+  assert.equal(documentFailure.status, 'found');
+  assert.equal(documentFailure.results[0].document.status, 'read_failed');
+  scope.readOriginalSources = savedReader;
   const now = Date.now();
   attempts = Array(798).fill(now);
   requests = [];
