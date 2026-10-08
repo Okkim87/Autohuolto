@@ -116,3 +116,9 @@ Pelkkä muokkaamattoman worker.js:n kopio editoriin ei enää riitä; Wrangler
 paketoi riippuvuuden mukaan. Kun julkaistaan ready-hakemistosta, kopioi sinne
 myös source-reader.mjs, package.json ja package-lock.json ja asenna riippuvuus.
 Testi: `node tests/source-reader.test.cjs` (oikea PDF-poiminta, mock-lataukset).
+
+Live-testin perusteella julkaisijoihin lisättiin Picoauto, NI, Yokogawa,
+Tektronix, Keysight ja Fluke. Suuret HTML-sivut voidaan lukea enintään
+512 KiB:n alkutekstiin rajattuina; tämä kerrotaan poiminnan kattavuudessa.
+PDF:n ylittäessä kokorajan sitä ei parsita. TI:n julkisen PDF-redirectin
+ts/ref_url-seurantaparametrit poistetaan ennen lopullista latausta.

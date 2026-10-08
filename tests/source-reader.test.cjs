@@ -10,6 +10,7 @@ function pdfFixture(){
  const api=await import('../Cloudflare-woker/source-reader.mjs');
  for(const url of ['http://nxp.com/a','https://nxp.com.evil.example/a','https://127.0.0.1/a','https://localhost/a','https://nxp.com:444/a','https://secret@nxp.com/a','https://nxp.com/a?token=private','https://not-enabled.example/a']) assert.equal(api.sourceUrl(url),null,url);
  assert.ok(api.sourceUrl('https://www.nxp.com/docs/a.pdf'));
+ assert.equal(api.sourceUrl('https://www.ti.com/lit/a.pdf?ts=123&ref_url=tracker').url,'https://www.ti.com/lit/a.pdf');
  assert.equal(api.robotsAllowed('User-agent: *\nDisallow: /private\nAllow: /private/public','/private/public/a'),true);
  assert.equal(api.robotsAllowed('User-agent: *\nDisallow: /private','/private/a'),false);
  assert.equal(api.robotsAllowed('User-agent: *\nDisallow: /\nUser-agent: AutosahkoapuSourceReader\nAllow: /','/docs/a'),true);
@@ -21,9 +22,10 @@ function pdfFixture(){
  let calls=[],mode='normal';const original=global.fetch;
  global.fetch=async(url,opts)=>{calls.push({url,opts});if(url.endsWith('/robots.txt'))return new Response(mode==='robots'?'User-agent: *\nDisallow: /':'User-agent: *\nAllow: /',{headers:{'Content-Type':'text/plain'}});
  if(mode==='redirect')return new Response(null,{status:302,headers:{Location:'http://127.0.0.1/private'}});
- if(mode==='large')return new Response('x',{headers:{'Content-Type':'text/html','Content-Length':'9999999'}});
- if(mode==='streamLarge')return new Response(new Uint8Array(512*1024+1),{headers:{'Content-Type':'text/html'}});
+ if(mode==='large')return new Response('x',{headers:{'Content-Type':'application/pdf','Content-Length':'9999999'}});
+ if(mode==='streamLarge')return new Response(new Uint8Array(512*1024+1),{headers:{'Content-Type':'application/pdf'}});
  if(mode==='blocked')return new Response('Forbidden',{status:403});
+ if(mode==='partialHtml')return new Response(html+' '.repeat(512*1024),{headers:{'Content-Type':'text/html'}});
  if(mode==='pdf')return new Response(pdfFixture(),{headers:{'Content-Type':'application/pdf'}});
  return new Response(html,{headers:{'Content-Type':'text/html'}});};
  try {
@@ -31,6 +33,7 @@ function pdfFixture(){
  const read=await api.readOriginalSource(item,'Ford Mondeo throttle sensor');assert.equal(read.status,'read');assert.equal(read.applicability,'not_verified');
  for(const call of calls){assert.equal(call.opts.redirect,'manual');assert.ok(!call.opts.headers.Authorization);assert.ok(!call.opts.headers['X-Subscription-Token']);assert.ok(!call.opts.headers.Cookie);}
  for(const [next,expected] of [['robots','robots_blocked'],['redirect','redirect_blocked'],['large','too_large'],['streamLarge','too_large'],['blocked','access_blocked'],['pdf','read']]){mode=next;const value=await api.readOriginalSource(item,'Ford Mondeo throttle sensor');assert.equal(value.status,expected,next);}
+ mode='partialHtml';const partial=await api.readOriginalSource(item,'Ford Mondeo throttle sensor');assert.equal(partial.status,'read');assert.ok(partial.coverage.includes('loppuosaa ei luettu'));
  mode='normal';calls=[];const result=await api.readOriginalSources([item,{...item,url:'https://www.ti.com/doc/a.html'},{...item,url:'https://www.hella.com/a.html'},{...item,url:'https://evil.example/a'}],'Ford Mondeo throttle sensor');assert.equal(result.filter(x=>x.document.status==='read').length,2);assert.equal(result[2].document.status,'not_selected');assert.equal(result[3].document.status,'host_not_enabled');
  }finally{global.fetch=original;}
  const source=fs.readFileSync('Cloudflare-woker/worker.js','utf8').replace(/^import .*;\r?\n/gm,'').replace('export default {','const worker = {').replace(/export class /g,'class ');

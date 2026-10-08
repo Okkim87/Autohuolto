@@ -2,6 +2,9 @@ import { getDocumentProxy } from 'unpdf';
 
 // Download only known public publishers. Search URLs are untrusted input.
 const publishers = [
+  ['picoauto.com','technical_publisher'], ['ni.com','technical_publisher'],
+  ['yokogawa.com','technical_publisher'], ['tek.com','technical_publisher'],
+  ['keysight.com','technical_publisher'], ['fluke.com','technical_publisher'],
   ['nxp.com','technical_publisher'], ['ti.com','technical_publisher'],
   ['bosch.com','technical_publisher'], ['bosch-mobility.com','technical_publisher'],
   ['hella.com','technical_publisher'], ['ngkntk.com','technical_publisher'],
@@ -20,6 +23,8 @@ const agent = 'AutosahkoapuSourceReader';
 export function sourceUrl(value) {
   try {
     const url = new URL(value);
+    // TI's public PDF redirects append tracking parameters. Do not forward them.
+    if ((url.hostname === 'ti.com' || url.hostname.endsWith('.ti.com')) && /\.pdf$/i.test(url.pathname) && [...url.searchParams.keys()].every(key => ['ts','ref_url'].includes(key))) url.search = '';
     if (url.protocol !== 'https:' || url.username || url.password || (url.port && url.port !== '443') || url.search || url.href.length > 2048) return null;
     const publisher = publishers.find(([host]) => url.hostname === host || url.hostname.endsWith('.' + host));
     if (!publisher) return null;
@@ -29,20 +34,25 @@ export function sourceUrl(value) {
 }
 
 async function cancel(response) { try { await response.body?.cancel(); } catch {} }
-async function bytesUnderLimit(response, limit = MAX_BYTES) {
-  if (Number(response.headers.get('content-length')) > limit) { await cancel(response); throw new Error('too_large'); }
+async function bytesUnderLimit(response, limit = MAX_BYTES, allowPartial = false) {
+  if (!allowPartial && Number(response.headers.get('content-length')) > limit) { await cancel(response); throw new Error('too_large'); }
   if (!response.body) return new Uint8Array();
-  const reader = response.body.getReader(); const chunks = []; let size = 0;
+  const reader = response.body.getReader(); const chunks = []; let size = 0; let truncated = false;
   try {
     while (true) {
       const { done, value } = await reader.read(); if (done) break;
       size += value.byteLength;
-      if (size > limit) { await reader.cancel(); throw new Error('too_large'); }
+      if (size > limit) {
+        if (!allowPartial) { await reader.cancel(); throw new Error('too_large'); }
+        chunks.push(value.slice(0, limit - (size - value.byteLength))); size = limit; truncated = true;
+        await reader.cancel(); break;
+      }
       chunks.push(value);
     }
   } finally { reader.releaseLock(); }
   const data = new Uint8Array(size); let offset = 0;
   for (const chunk of chunks) { data.set(chunk, offset); offset += chunk.byteLength; }
+  data.truncated = truncated;
   return data;
 }
 
@@ -149,10 +159,11 @@ export async function readOriginalSource(item, query, checked = new Map()) {
       if(/noai|noarchive|nosnippet/i.test(response.headers.get('x-robots-tag')||'')){await cancel(response);return {status:'publisher_restricted'};}
       const type=(response.headers.get('content-type')||'').toLowerCase();
       if(!/text\/html|text\/plain|application\/pdf/.test(type)){await cancel(response);return {status:'unsupported_format'};}
-      const data=await bytesUnderLimit(response);let extracted;
+      const data=await bytesUnderLimit(response,MAX_BYTES,!type.includes('application/pdf'));let extracted;
       if(type.includes('application/pdf'))extracted=await extractPdf(data,query,deadline);
       else if(type.includes('text/html'))extracted=extractHtml(new TextDecoder().decode(data),query);
       else {const excerpts=selectExcerpts([{locator:'Tekstitiedosto',text:new TextDecoder().decode(data)}],query);extracted={status:excerpts.length?'read':'no_relevant_text',format:'text',excerpts,coverage:'Rajattu tekstiote.'};}
+      if (data.truncated) extracted.coverage = (extracted.coverage || '') + ' Lataus rajattiin 512 KiB:n alkutekstiin; loppuosaa ei luettu.';
       return {...extracted,url,kind:sourceUrl(url).kind,checkedAt:new Date().toISOString(),applicability:'not_verified'};
     }
     return {status:'redirect_blocked'};

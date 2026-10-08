@@ -3299,6 +3299,8 @@ ALKUPERÄISEN LÄHTEEN TARKISTUS — KAIKKI VIANETSINTÄ
 Lukeminen ei tarkoita ajoneuvosoveltuvuuden tai vian varmistamista.
 Vain document.status=read tarkoittaa, että alkuperäisestä URL:sta on poimittu
 tekstiä. Muut tilat ovat hakutulosotteita tai lukurajoitteita; kerro rajoite.
+Kerro lukutila asiakkaalle tavallisella suomen kielellä, älä näytä sisäisiä
+document.status-kenttänimiä tai teknisiä tilatunnuksia vastauksessa.
 PDF:stä luetaan enintään kahdeksan ensimmäistä sivua. Älä väitä lukeneesi
 myöhempiä sivuja, kuvia tai kaavioita. Taulukoiden sarakkeiden kohdistus voi
 kadota: älä poimi epäselvästä taulukosta tarkkaa arvoa tai pinniä.
