@@ -34,3 +34,15 @@ class_name = "AccessGate"
 [[migrations]]
 tag = "v1-access-gate"
 new_sqlite_classes = ["AccessGate"]
+
+# Optional Brave search. Keep disabled until free credits and keys are verified.
+[vars]
+WEB_SEARCH_ENABLED = "false"
+
+[[durable_objects.bindings]]
+name = "WEB_SEARCH_BUDGET"
+class_name = "WebSearchBudget"
+
+[[migrations]]
+tag = "v2-web-search-budget"
+new_sqlite_classes = ["WebSearchBudget"]
