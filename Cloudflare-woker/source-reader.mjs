@@ -170,9 +170,9 @@ export async function readOriginalSource(item, query, checked = new Map()) {
   }catch(error){return {status:['too_large','robots_blocked','robots_unavailable'].includes(error.message)?error.message:'read_failed'};}
 }
 
-export async function readOriginalSources(results, query) {
+export async function readOriginalSources(results, query, maxReads = 2) {
   const selected=results.map((item,index)=>({item,index,target:sourceUrl(item.url)})).filter(x=>x.target)
-    .sort((a,b)=>(a.target.kind==='technical_publisher'?0:1)-(b.target.kind==='technical_publisher'?0:1)||a.index-b.index).slice(0,2);
+    .sort((a,b)=>(a.target.kind==='technical_publisher'?0:1)-(b.target.kind==='technical_publisher'?0:1)||a.index-b.index).slice(0, Math.max(0, Math.min(2, maxReads)));
   const enriched=results.map(item=>({...item,document:{status:sourceUrl(item.url)?'not_selected':'host_not_enabled'}}));
   const checked=new Map();
   // Sequential reads bound memory and isolate PDF extraction inside the Durable Object.
