@@ -95,6 +95,7 @@
 <li><strong>OpenAI</strong> saa tekoälyvastauksen muodostamiseen lähetetyt ajoneuvotiedot, oireet, mittaustulokset, kyseisen keskustelun aiemmat viestit ja lähetetyt liitteet. Rajapintapyyntö käyttää asetusta <code>store: false</code>. OpenAI ei oletusarvoisesti käytä API-sisältöjä mallien kouluttamiseen. Asetus ei tarkoita kaiken teknisen tai väärinkäytösten torjuntaan liittyvän säilytyksen poistumista.</li>
 
 <li><strong>Eezy ja maksupalvelun toimijat</strong> käsittelevät mahdolliseen maksulliseen ostoon liittyvät maksamis- ja laskutustiedot omien tietosuojaselosteidensa mukaisesti. Korttitietoja ei syötetä Autosähköapu AI:n diagnoosikeskusteluun.</li>
+<li><strong>Google Analytics:</strong> suostumuksellasi julkisten sivujen käyntejä mitataan palvelun kehittämiseksi (GDPR 6 artikla 1 a). Google käsittelee esimerkiksi verkkoyhteyden, selaimen ja laitteen tietoja, sivukäyntejä sekä evästetunnisteita. Emme lähetä diagnoosikeskustelun sisältöä, liitteitä tai aktivointikoodia analytiikkatapahtumina. Mainonnan suostumukset ja Google Signals on poistettu käytöstä tässä toteutuksessa. Sivun osoitteesta ja viittaavasta osoitteesta poistetaan kyselyparametrit ja fragmentit ennen sivukäynnin määritystä. Google voi käsitellä tietoja myös EU:n ja ETA:n ulkopuolella. Katso <a href="https://business.safety.google/privacy/">Googlen yrityspalvelujen tietosuojakuvaus</a> ja <a href="https://business.safety.google/adsprocessorterms/">Googlen tietojenkäsittelyehdot</a>.</li>
 <li><strong>Google Gmail</strong> välittää asiakaspalveluun sähköpostitse lähettämäsi viestit ja niiden liitteet.</li>
 </ul>
 <p>Palvelussa ei kerätä asiakaskeskusteluista omaa opetusaineistoa eikä niitä julkaista muiden käyttäjien nähtäväksi. Tietoja voidaan luovuttaa viranomaiselle, jos laki sitä edellyttää.</p>
@@ -109,10 +110,11 @@
 <li><strong>Asiakaspalveluviestit:</strong> poistetaan viimeistään 12 kuukauden kuluessa asian päättymisestä. Lakisääteinen velvoite tai avoin riita voi edellyttää kyseiseen asiaan liittyvien tietojen pidempää säilyttämistä. Tällöin säilytetään vain tarpeelliset tiedot.</li>
 <li><strong>OpenAI:</strong> oletusarvoiset väärinkäytösten torjuntalokit voivat sisältää lähetettyä aineistoa enintään 30 päivää, ellei laki edellytä pidempää säilytystä. Palvelulla ei ole vahvistettua Zero Data Retention -asetusta. Teknisiin välimuisteihin ja esimerkiksi kuvien turvallisuustarkistuksiin voi liittyä erillisiä säilytyskäytäntöjä. Katso <a href="https://developers.openai.com/api/docs/guides/your-data">OpenAI:n tiedonkäsittelykuvaus</a>.</li>
 <li><strong>Cloudflaren Worker-lokit:</strong> nykyisen ilmaispaketin lokien säilytysaika on kolme päivää. Sovelluksen omat virhelokit eivät tarkoituksella sisällä keskustelua tai liitteitä. Verkkopalveluntarjoajien omiin turvallisuuslokeihin sovelletaan niiden käytäntöjä.</li>
+<li><strong>Analytiikka:</strong> suostumusvalinnan sekä sivuston asettamien <code>_ga</code>-evästeiden voimassaolo on enintään 180 päivää ilman evästeen automaattista uusimista. Googlen palvelussa tietojen säilytys määräytyy Analytics-tilin asetusten ja Googlen käytäntöjen mukaan; evästeen poistaminen ei poista jo kerättyä raportointitietoa. Tilin säilytysaikaa ei ole tässä muutoksessa varmennettu.</li>
 <li><strong>Maksu- ja kirjanpitotiedot:</strong> niitä koskevat erilliset lakisääteiset säilytysvelvoitteet ja Eezy-palvelun käytännöt.</li>
 </ul>
 <h2>6. Selaimen paikallinen tallennus</h2>
-<p>Selaimen paikalliseen tallennukseen jää aktivointikoodi (<code>asai_access_code</code>) ja ilmaisen kokeilun käytön tila (<code>asai_free_used</code>) pyytämäsi palvelun ja käyttöoikeuden toteuttamiseksi. Niillä ei ole omaa automaattista aikakatkaisua. Voit poistaa ne selaimen sivustotietojen tyhjennyksellä; tällöin aktivointikoodi on annettava uudelleen. Keskusteluhistoriaa ei tallenneta näihin tietoihin. Etusivulla ei ole Google Analytics -seurantaa.</p>
+<p>Selaimen paikalliseen tallennukseen jää aktivointikoodi (<code>asai_access_code</code>) ja ilmaisen kokeilun käytön tila (<code>asai_free_used</code>) pyytämäsi palvelun ja käyttöoikeuden toteuttamiseksi. Niillä ei ole omaa automaattista aikakatkaisua. Voit poistaa ne selaimen sivustotietojen tyhjennyksellä; tällöin aktivointikoodi on annettava uudelleen. Keskusteluhistoriaa ei tallenneta näihin tietoihin. Analytiikan valinta tallennetaan avaimella <code>asai_analytics_consent_v1</code> 180 päiväksi. Google Analytics ladataan vain hyväksynnän jälkeen. Hyväksyntä ja kieltäytyminen eivät vaikuta vianetsintäpalveluun. Voit muuttaa valintaa tai peruuttaa suostumuksen jokaisen julkisen sivun alaosan Evästeasetukset-painikkeesta. Peruuttaminen estää jatkoseurannan tässä selaimessa ja poistaa sivuston Google Analytics -evästeet, mutta ei automaattisesti poista aiemmin Googlelle lähetettyjä tietoja. Suostumuksen peruuttaminen ei vaikuta sitä edeltäneen käsittelyn lainmukaisuuteen.</p>
 <h2>7. Suojaus ja tekoälyn käyttö</h2>
 <p>Tiedot siirretään salatulla HTTPS-yhteydellä. Hallintatoiminnot on suojattu, ja pääsy tietoihin rajataan palvelun ylläpidon edellyttämään käyttöön. Tekoäly antaa vianetsintäehdotuksia; se ei tee sinua koskevia oikeudellisia tai vastaavalla tavalla merkittäviä automaattisia päätöksiä. Arvioi ehdotukset kriittisesti ja noudata ajoneuvon turvallisuusohjeita.</p>
 <h2>8. Oikeutesi ja yhteydenotto</h2>
@@ -133,5 +135,6 @@
   <p>Autosähköapu AI · autosahkoapu@gmail.com</p>
 </footer>
 
+<script src="/analytics-consent.js?v=20261008-1" defer></script>
 </body>
 </html>
