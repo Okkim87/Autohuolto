@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync('Cloudflare-woker/worker.js', 'utf8')
   .replace('export default {', 'const worker = {')
-  .replace('export class AccessGate', 'class AccessGate');
+  .replace(/export class /g, 'class ');
 const scope = vm.createContext({ console, Response, Request, URL, crypto });
 vm.runInContext(source + '\nglobalThis.check = { SYSTEM_PROMPT, buildPrompt, sourceSummary };', scope);
 const { SYSTEM_PROMPT, buildPrompt } = scope.check;

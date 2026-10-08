@@ -400,10 +400,20 @@ function measurementIllustration(reply) {
 }
 
 // Mittausohje ja tavallinen keskusteluvastaus näytetään eri tavoin.
+function safeSourceLink(value) {
+  try {
+    const url = new URL(String(value || ''));
+    if (url.protocol !== 'https:' || url.username || url.password || url.hostname === 'localhost' || url.hostname.endsWith('.local') || /^[\d.:\[\]]+$/.test(url.hostname)) return '';
+    return url.href;
+  } catch { return ''; }
+}
+
 function addAssistant(r, sources = []) {
   const sourceHtml = Array.isArray(sources) && sources.length
     ? `<div class="bubble-sources">${sources.map(x =>
-        `<span>${esc(x.name || 'Data')}: ${esc(x.provider || '')} ${esc(x.detail || '')}</span>`
+        `<span>${esc(x.name || 'Data')}: ${safeSourceLink(x.url)
+          ? `<a href="${esc(safeSourceLink(x.url))}" target="_blank" rel="noopener noreferrer">${esc(x.provider || 'Avaa lähde')}</a>`
+          : esc(x.provider || '')} ${esc(x.detail || '')}</span>`
       ).join('')}</div>`
     : '';
 

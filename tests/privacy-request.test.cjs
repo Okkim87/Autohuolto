@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync('Cloudflare-woker/worker.js', 'utf8')
   .replace('export default {', 'const worker = {')
-  .replace('export class AccessGate', 'class AccessGate');
+  .replace(/export class /g, 'class ');
 let payload, fail = false, writes = 0;
 const logs = [];
 const secret = 'PRIVATE-VIN-CODE-CHAT';
