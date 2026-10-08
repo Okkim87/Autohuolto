@@ -122,3 +122,5 @@ Tektronix, Keysight ja Fluke. Suuret HTML-sivut voidaan lukea enintään
 512 KiB:n alkutekstiin rajattuina; tämä kerrotaan poiminnan kattavuudessa.
 PDF:n ylittäessä kokorajan sitä ei parsita. TI:n julkisen PDF-redirectin
 ts/ref_url-seurantaparametrit poistetaan ennen lopullista latausta.
+
+Jos alkuperäistä lähdettä ei saatu luettua, tehdään enintään yksi lisähaku ennestään sallittuihin julkaisijoihin. Myös lisähaku varataan 800 yrityksen kiintiöstä ennen API-kutsua. Kummassakin vaiheessa luetaan enintään yksi dokumentti (yhteensä kaksi). Lisähaun epäonnistuminen säilyttää ensimmäiset tulokset. Tarkka autokohtainen arvo ilman varmennusta johtaa yhteen olennaiseen lisäkysymykseen.

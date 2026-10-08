@@ -170,8 +170,31 @@ export class WebSearchBudget {
         .map(item => ({ title: plainSearchText(item.title, 160), url: safeWebResultUrl(item.url), snippet: plainSearchText(item.description, 500) }))
         .filter(item => item.url && item.title);
       let enriched;
-      try { enriched = await readOriginalSources(results, body.query); }
+      try { enriched = await readOriginalSources(results, body.query, 1); }
       catch { enriched = results.map(item => ({ ...item, document: { status: 'read_failed' } })); }
+      // One alternative search, counted before calling Brave; at most two document reads total.
+      if (enriched.some(item => item.document) && !enriched.some(item => item.document?.status === 'read') && attempts.length < 800) {
+        const sites = /technical documentation/.test(body.query)
+          ? '(site:picoauto.com OR site:hella.com OR site:bosch.com)'
+          : '(site:talkford.com OR site:hella.com OR site:ross-tech.com OR site:picoauto.com)';
+        url.searchParams.set('q', body.query.slice(0, 260) + ' ' + sites);
+        try {
+          attempts.push(Date.now());
+          await this.storage.put('attempts', attempts);
+          const alternative = await fetch(url.href, {
+            headers: { Accept: 'application/json', 'X-Subscription-Token': this.env.BRAVE_SEARCH_API_KEY },
+            signal: AbortSignal.timeout(6000)
+          });
+          if (alternative.ok) {
+            const data = await alternative.json();
+            const extra = (Array.isArray(data?.web?.results) ? data.web.results : []).slice(0, 5)
+              .map(item => ({ title: plainSearchText(item.title, 160), url: safeWebResultUrl(item.url), snippet: plainSearchText(item.description, 500) }))
+              .filter(item => item.url && item.title && !enriched.some(existing => existing.url === item.url));
+            const readExtra = await readOriginalSources(extra, body.query, 1);
+            enriched = [...enriched, ...readExtra].sort((a, b) => Number(b.document?.status === 'read') - Number(a.document?.status === 'read')).slice(0, 5);
+          }
+        } catch { /* Keep original results when the alternative is unavailable. */ }
+      }
       return json({ status: results.length ? 'found' : 'empty', results: enriched });
     } catch { return json({ status: 'failed', results: [] }); }
   }
@@ -3301,6 +3324,11 @@ Vain document.status=read tarkoittaa, että alkuperäisestä URL:sta on poimittu
 tekstiä. Muut tilat ovat hakutulosotteita tai lukurajoitteita; kerro rajoite.
 Kerro lukutila asiakkaalle tavallisella suomen kielellä, älä näytä sisäisiä
 document.status-kenttänimiä tai teknisiä tilatunnuksia vastauksessa.
+Jos tarkkaa autokohtaista arvoa ei voida vahvistaa, kerro puute lyhyesti ja
+päätä how-kentän vastaus yhteen hyödylliseen tarkentavaan kysymykseen.
+Kysy esimerkiksi korimalli ja tutkittava liitin/väylähaara, tai muussa viassa
+puuttuva moottoriversio, mittauspiste tai toimintatila. Älä toista rajoitetta
+kaikissa kentissä äläkä kysy jo annettua tietoa uudelleen.
 PDF:stä luetaan enintään kahdeksan ensimmäistä sivua. Älä väitä lukeneesi
 myöhempiä sivuja, kuvia tai kaavioita. Taulukoiden sarakkeiden kohdistus voi
 kadota: älä poimi epäselvästä taulukosta tarkkaa arvoa tai pinniä.
