@@ -1372,19 +1372,39 @@ canvas{
   padding-left:10px
 }
 
+.bubble-source-details{
+  margin-top:12px;
+  border-top:1px solid #2a3646;
+  padding-top:8px
+}
+.bubble-source-details summary{
+  cursor:pointer;
+  color:#8f9db0;
+  font-size:.8rem;
+  padding:4px 0
+}
+.bubble-source-details summary:focus-visible{
+  outline:2px solid #ff7a1a;
+  outline-offset:3px
+}
+.source-context{
+  color:#8f9db0;
+  font-size:.75rem;
+  line-height:1.5
+}
 .bubble-sources{
   display:flex;
   gap:6px;
-  flex-wrap:wrap;
+  flex-direction:column;
   margin-top:12px
 }
 
 .bubble-sources span{
   font-size:.65rem;
   color:#8f9db0;
-  border:1px solid #2a3646;
-  border-radius:999px;
-  padding:4px 7px
+  line-height:1.5;
+  overflow-wrap:anywhere;
+  padding:4px 0
 }
 
 .bubble-files{
