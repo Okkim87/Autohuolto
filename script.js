@@ -410,11 +410,13 @@ function safeSourceLink(value) {
 
 function addAssistant(r, sources = []) {
   const sourceHtml = Array.isArray(sources) && sources.length
-    ? `<div class="bubble-sources">${sources.map(x =>
+    ? `<details class="bubble-source-details"><summary>Lähteet ja taustatiedot</summary>
+      <p class="source-context">Verkkolöydöt tukevat vianetsintää. Ne eivät yksin vahvista vikaa tai tiedon sopivuutta autoosi. Johtopäätökset tarkistetaan havaintojen ja mittausten avulla.</p>
+      <div class="bubble-sources">${sources.map(x =>
         `<span>${esc(x.name || 'Data')}: ${safeSourceLink(x.url)
           ? `<a href="${esc(safeSourceLink(x.url))}" target="_blank" rel="noopener noreferrer">${esc(x.provider || 'Avaa lähde')}</a>`
           : esc(x.provider || '')} ${esc(x.detail || '')}</span>`
-      ).join('')}</div>`
+      ).join('')}</div></details>`
     : '';
 
   if (r?.blocked) {
