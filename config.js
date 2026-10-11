@@ -3,5 +3,6 @@ window.ASAI_CONFIG = {
   salesOpen: false,
   paymentLinks: {},
   cancellationUrl: "",
-  turnstileSiteKey: ""
+  turnstileSiteKey: "",
+  feedbackFormUrl: "https://docs.google.com/forms/d/e/1FAIpQLSfD4YS0g_8NZy2enV93vhkme80OI01lqpoAspL63ziOQz-J5w/viewform"
 };
