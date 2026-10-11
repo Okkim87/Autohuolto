@@ -24,34 +24,8 @@
   <meta name="theme-color" content="#080b10">
 
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css?v=20261011-feedback-1">
-  <style>
-    @media (max-width: 640px) {
-      html, body, main, .hero, .hero-grid, .hero-copy {
-        width: 100%;
-        max-width: 100%;
-        min-width: 0;
-        overflow-x: hidden;
-      }
-      .hero-grid {
-        grid-template-columns: minmax(0, 1fr) !important;
-      }
-      .hero h1,
-      .hero h1 span {
-        display: block;
-        width: 100%;
-        max-width: 100%;
-        min-width: 0;
-        white-space: normal !important;
-        overflow-wrap: anywhere !important;
-        word-break: break-word !important;
-      }
-      .hero h1 {
-        font-size: clamp(2rem, 9.5vw, 2.55rem) !important;
-        line-height: 1.03 !important;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="style.css?v=20261011-chat-1">
+
 
   <meta
     property="og:title"
@@ -128,14 +102,14 @@
   </script>
 </head>
 
-<body>
+<body class="chat-home">
 
 <a class="skip-link" href="#diagnoosi">Siirry diagnoosiin</a>
 
 <header class="site-header">
   <div class="container nav-wrap">
 
-    <a class="brand" href="#alku">
+    <a class="brand" href="/">
       <span class="brand-mark">A+</span>
       <span>
         <strong>Autosähköapu AI</strong>
@@ -152,132 +126,28 @@
       Valikko
     </button>
 
-    <nav id="main-nav" class="main-nav">
-      <a href="#diagnoosi">Diagnoosi</a>
-      <a href="#miten">Miten toimii</a>
-      <a href="#oppaat">Oppaat</a>
-      <a href="#diagnoosi" class="nav-cta">Aloita diagnoosi</a>
+    <nav id="main-nav" class="main-nav" aria-label="Päävalikko">
+      <a href="/#diagnoosi">Chat</a>
+      <a href="/palvelu/#miten">Miten palvelu toimii</a>
+      <a href="/palvelu/#oppaat">Oppaat</a>
+      <a href="/palvelu/#kehityksessa">Testikoodi ja kehitys</a>
+      <a href="/palvelu/#tekijasta">Palvelun tekijä</a>
+      <a href="/tietosuoja/">Tietosuoja ja evästeet</a>
+      <a href="/kayttoehdot/">Käyttöehdot</a>
+      <a href="/peruuttaminen/">Peruuttaminen</a>
     </nav>
 
   </div>
 </header>
 
-<main>
-
-<section id="alku" class="hero">
-
-  <div class="hero-grid-bg"></div>
-
-  <div class="container hero-grid">
-
-    <div class="hero-copy reveal">
-
-      <p class="eyebrow">
-        <span class="live-dot"></span>
-        AI-avusteinen diagnoosi · selaimessa
-      </p>
-
-      <h1>
-        Auton vikakoodit ja AI-autodiagnostiikka.<br>
-        <span>Älä arvaa vikaa – mittaa oikein.</span>
-      </h1>
-
-      <p class="lead">
-        Kerro auto ja oire. Lisää vikakoodi tai mittaustulos, jos sellainen
-        on tiedossa. Autosähköapu AI ohjaa vianetsintää yksi vaihe kerrallaan
-        ja jatkaa saamiesi mittaustulosten perusteella.
-      </p>
-
-      <p>Palvelu on maksuttomassa testivaiheessa. Maksullinen myynti ei ole vielä avoinna.</p>
-
-      <div class="hero-actions">
-        <a class="button button-primary" href="#diagnoosi">
-          Aloita diagnoosi
-        </a>
-
-        <a
-          class="button button-secondary"
-          href="mailto:autosahkoapu@gmail.com?subject=Autos%C3%A4hk%C3%B6apu%20AI%20%E2%80%93%20testikoodi"
-        >
-          Pyydä testikoodi
-        </a>
-      </div>
-
-      <div class="trust-row">
-        <span>Ei osien arvaamista</span>
-        <span>Yksi mittaus kerrallaan</span>
-        <span>Kuvat ja OBD-data</span>
-      </div>
-
-    </div>
-
-    <div class="hero-console reveal">
-
-      <div class="console-top">
-        <span></span>
-        <span></span>
-        <span></span>
-        <small>DIAGNOSTIC FLOW</small>
-      </div>
-
-      <div class="console-body">
-
-        <div class="console-line muted">
-          VW GOLF · P0101 · tehottomuus
-        </div>
-
-        <div class="flow-step active">
-          <b>01</b>
-          <div>
-            <small>SEURAAVA MITTAUS</small>
-            <strong>Lue yksi relevantti mittausarvo määritellyssä käyttötilanteessa</strong>
-          </div>
-        </div>
-
-        <div class="flow-branch">
-          <span>Käyttäjä antaa mittaustuloksen</span>
-          <i>→</i>
-          <strong>AI rajaa seuraavan tutkimussuunnan</strong>
-        </div>
-
-        <div class="console-footer">
-          <span class="pulse"></span>
-          Mittaus → tulos → seuraava mittaus
-        </div>
-
-      </div>
-    </div>
-
-  </div>
-</section>
-
+<main class="chat-home-main">
 <section id="diagnoosi" class="section diagnosis-section">
 
   <div class="container">
 
-    <div class="section-heading reveal">
+    <h1 class="visually-hidden">Keskustele auton viasta</h1>
 
-      <p class="eyebrow">Diagnoosi</p>
-
-      <h2>Keskustele auton viasta</h2>
-
-      <p>
-        Kuvaile oire omin sanoin tai lisää vikakoodi tai mittaustulos.
-        Voit liittää myös kuvan, kytkentäkaavion, testerin kuvakaappauksen,
-        CSV-, JSON- tai muun OBD-datan.
-      </p>
-
-      <p>
-        <strong>
-          Ilmainen versio sisältää yhden kysymyksen.
-        </strong>
-        Laajemmassa testiversiossa AI jatkaa vianetsintää
-        mittaustulostesi perusteella.
-      </p>
-
-    </div>
-
-    <div class="chat-app reveal">
+    <div class="chat-app">
 
       <div class="chat-toolbar">
 
@@ -328,6 +198,8 @@
 
         <button
           id="toggle-context"
+          aria-controls="vehicle-context"
+          aria-expanded="false"
           class="button button-ghost compact-button"
           type="button"
         >
@@ -459,7 +331,7 @@
           </small>
         </div>
 
-        <div class="chat-access-code">
+        <details class="activation-details"><summary>Aktivointikoodi</summary><div class="chat-access-code">
 
           <input
             id="access-code"
@@ -476,7 +348,7 @@
             Aktivoi
           </button>
 
-        </div>
+        </div></details>
 
       </div>
 
@@ -495,15 +367,10 @@
             <strong>Autosähköapu AI</strong>
 
             <p>
-              Kerro mikä autossa on vikana tai mitä olet jo mitannut.
-              Voin auttaa valitsemaan seuraavan mittauksen.
+              Kerro auton merkki, malli ja oire. Voit lisätä vikakoodin, mittaustuloksen tai kuvan.
             </p>
 
-            <p class="chat-hint">
-              Esim. “Ford Mondeo 2010 2.0 bensa.
-              Kylmänä kierrokset seilaavat, lämpimänä toimii.
-              Ei vikakoodeja.”
-            </p>
+
 
           </div>
 
@@ -569,304 +436,17 @@
   </div>
 
 </section>
-
-<section id="miten" class="section">
-
-  <div class="container">
-
-    <div class="section-heading reveal">
-
-      <p class="eyebrow">Miten toimii</p>
-
-      <h2>Mittaus → tulos → seuraava mittaus</h2>
-
-      <p>
-        Autosähköapu AI ei päättele viallista osaa pelkästä
-        vikakoodista. Se pyrkii valitsemaan yhden mittauksen,
-        joka auttaa rajaamaan vaihtoehtoja.
-      </p>
-
-      <p>
-        Jos mittaustulos ei tue aiempaa oletusta, vianetsintäsuuntaa
-        muutetaan sen sijaan, että samaa diagnoosia yritettäisiin väkisin vahvistaa.
-      </p>
-
-    </div>
-
-    <div class="steps-grid">
-
-      <article class="step-card reveal">
-        <span>01</span>
-        <h3>Kerro vika</h3>
-        <p>
-          Auto, oire, vikakoodi tai jo tehty mittaus.
-        </p>
-      </article>
-
-      <article class="step-card reveal">
-        <span>02</span>
-        <h3>Tee yksi mittaus</h3>
-        <p>
-          Saat seuraavan mittauskohteen ja tarvittavan työkalun.
-        </p>
-      </article>
-
-      <article class="step-card reveal">
-        <span>03</span>
-        <h3>Anna tulos</h3>
-        <p>
-          AI käyttää mittaustulosta seuraavan tutkimuksen valintaan.
-        </p>
-      </article>
-
-    </div>
-
-  </div>
-</section>
-
-<section id="kehityksessa" class="section section-dark">
-
-  <div class="container">
-
-    <div class="section-heading reveal">
-
-      <p class="eyebrow">Kehitysvaihe</p>
-
-      <h2>Palvelua testataan oikeilla vikatapauksilla</h2>
-
-      <p>
-        Autosähköapu AI on vielä kehityksessä.
-        Etsin mekaanikkoja, diagnostiikan parissa työskenteleviä,
-        autoalan opettajia ja harrastajia testaamaan palvelua.
-      </p>
-
-      <p>
-        <strong>
-          Testaajat saavat maksuttoman aktivointikoodin
-          laajempaan versioon.
-        </strong>
-      </p>
-
-      <div
-        class="hero-actions"
-        style="justify-content:center"
-      >
-
-        <a
-          class="button button-secondary"
-          href="mailto:autosahkoapu@gmail.com?subject=Autos%C3%A4hk%C3%B6apu%20AI%20%E2%80%93%20testikoodi"
-        >
-          Pyydä maksuton testikoodi
-        </a>
-
-      </div>
-
-      <p>
-        <small>
-          AI voi tehdä virheitä. Varmista ajoneuvokohtaiset tiedot
-          luotettavasta teknisestä lähteestä ennen korjaustoimia.
-        </small>
-      </p>
-
-    </div>
-
-  </div>
-
-</section>
-
-<section id="oppaat" class="section seo-guides">
-
-  <div class="container">
-
-    <div class="section-heading reveal">
-
-      <p class="eyebrow">Autodiagnostiikan oppaat</p>
-
-      <h2>Lisätietoa vikakoodeista ja mittauksista</h2>
-
-    </div>
-
-    <div class="guide-grid">
-      <a class="guide-card reveal" href="/akku-tyhjenee-yon-aikana/"><small>AKKU JA SÄHKÖVIAT</small><h3>Akku tyhjenee yön aikana</h3><p>Akun kunto, latausvajaus vai lepovirta? Katso mistä aloittaa.</p><span>Lue opas →</span></a>
-
-      <a
-        class="guide-card reveal"
-        href="/auton-vikakoodit/"
-      >
-        <small>PERUSTEET</small>
-        <h3>Auton vikakoodit</h3>
-        <p>
-          Mitä P-, B-, C- ja U-koodit tarkoittavat.
-        </p>
-        <span>Lue opas →</span>
-      </a>
-
-      <a
-        class="guide-card reveal"
-        href="/autodiagnostiikka/"
-      >
-        <small>VIANHAKU</small>
-        <h3>Autodiagnostiikka käytännössä</h3>
-        <p>
-          OBD-livedata, yleismittari ja mittausohjattu vianhaku.
-        </p>
-        <span>Lue opas →</span>
-      </a>
-
-      <a
-        class="guide-card reveal"
-        href="/obd2-vikakoodit/"
-      >
-        <small>OBD2</small>
-        <h3>OBD2 ja livedata</h3>
-        <p>
-          Mitä testerin tiedoista kannattaa ottaa talteen.
-        </p>
-        <span>Lue opas →</span>
-      </a>
-
-      <a
-        class="guide-card reveal"
-        href="/vikakoodi-p0171/"
-      >
-        <small>VIKAKOODI</small>
-        <h3>P0171</h3>
-        <p>
-          Järjestelmä liian laiha.
-        </p>
-        <span>P0171-opas →</span>
-      </a>
-
-      <a
-        class="guide-card reveal"
-        href="/vikakoodi-p0101/"
-      >
-        <small>VIKAKOODI</small>
-        <h3>P0101</h3>
-        <p>
-          Ilmamäärän uskottavuus.
-        </p>
-        <span>P0101-opas →</span>
-      </a>
-
-      <a
-        class="guide-card reveal"
-        href="/vikakoodi-p0087/"
-      >
-        <small>VIKAKOODI</small>
-        <h3>P0087</h3>
-        <p>
-          Polttoainepaine liian alhainen.
-        </p>
-        <span>P0087-opas →</span>
-      </a>
-
-    </div>
-
-  </div>
-
-</section>
-
-<section id="tekijasta" class="section section-dark" aria-labelledby="tekijasta-otsikko">
-  <div class="container article-wrap">
-    <div class="section-heading">
-      <p class="eyebrow">Palvelun tekijältä</p>
-      <h2 id="tekijasta-otsikko">Miksi tein Autosähköapu AI -palvelun?</h2>
-    </div>
-
-    <p class="author-line">
-      <strong>Mikko Minkkinen</strong>
-      <span> · Autosähköapu AI -palvelun kehittäjä</span>
-    </p>
-
-    <p>Olen kehittänyt Autosähköapu AI -palvelua, jonka tarkoituksena on ohjata auton vianetsintää mittaus kerrallaan ja vähentää alalla esiintyvää ”vaihdetaan osia, kunnes vika poistuu” -menetelmää.</p>
-
-    <p>Palvelu ei perustu pelkästään tekoälyn vastauksiin. Sen taustalla on myös autodiagnostiikan tietokanta, josta haetaan muun muassa vikakoodien määritelmiä ja OBD-mittausparametreihin liittyvää tietoa. Tekoäly hyödyntää saatavilla olevaa dataa yhdessä käyttäjän ilmoittamien oireiden ja mittaustulosten kanssa. Jos tarkkaa ajoneuvokohtaista tietoa ei ole vahvistettu, sitä ei esitetä varmana.</p>
-
-    <p>Käyttäjä kertoo auton oireet ja mahdolliset vikakoodit, minkä jälkeen palvelu ehdottaa seuraavaa tarkistusta. Kun mittaustulos annetaan, palvelu arvioi sen ja valitsee jatkovaiheen. Jos käyttäjä kertoo uuden olennaisen oireen, myös aiempaa mittaussuunnitelmaa voidaan muuttaa.</p>
-
-    <h3>Voisiko palvelu auttaa myös autoalan opetuksessa?</h3>
-
-    <p>Ajattelin, että tästä voisi olla hyötyä myös autoalan opetuksessa esimerkiksi vianetsinnän päättelyketjun harjoittelussa. Opiskelija joutuu pohtimaan, mitä mitataan, miksi mitataan ja mitä tuloksesta voidaan päätellä.</p>
-
-    <p>Palvelu on edelleen kehitysvaiheessa. Sen ehdotuksia pitää siksi arvioida kriittisesti.</p>
-
-    <p>Jos olet kiinnostunut kokeilusta, <a href="mailto:autosahkoapu@gmail.com?subject=Autos%C3%A4hk%C3%B6apu%20AI%20%E2%80%93%20opettajan%20kokeilu">ota yhteyttä sähköpostitse: autosahkoapu@gmail.com</a>.</p>
-
-    <a class="button button-primary" href="#diagnoosi">Kokeile mittausohjattua vianhakua</a>
-  </div>
-</section>
-
-<section id="palaute" class="section section-dark" aria-labelledby="feedback-heading" hidden>
-  <div class="container feedback-card">
-    <div>
-      <p class="eyebrow">Kehitetään yhdessä</p>
-      <h2 id="feedback-heading">Mitä voisimme parantaa?</h2>
-      <p>Kerro kehitysehdotus tai asia, joka ei toiminut. Voit antaa palautteen ilman nimeä tai sähköpostiosoitetta.</p>
-      <p class="feedback-note">Lomake avautuu Google Formsiin. Älä lisää palautteeseen henkilötietoja, rekisteritunnusta tai valmistenumeroa. <a href="/tietosuoja/#palautteen-tietosuoja">Palautteen tietosuoja</a></p>
-    </div>
-    <a id="feedback-link" class="button button-primary" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Anna palautetta <span class="feedback-new-tab">(avautuu uuteen välilehteen)</span></a>
-  </div>
-</section>
-
 </main>
-
-<footer class="site-footer">
-
-  <div class="container footer-grid">
-
-    <div>
-      <strong>Autosähköapu AI</strong>
-      <p>
-        Mittausohjattu autodiagnostiikka.
-      </p>
-    </div>
-
-    <div>
-      <strong>Yhteys</strong>
-      <p>
-        <a href="mailto:autosahkoapu@gmail.com">
-          autosahkoapu@gmail.com
-        </a>
-      </p>
-    </div>
-
-    <div>
-      <strong>Huomio</strong>
-      <p>
-        AI voi erehtyä. Tarkista ajoneuvokohtaiset arvot
-        luotettavasta teknisestä lähteestä.
-        Vastuu mittauksista ja korjauksista on työn suorittajalla.
-      </p>
-    </div>
-
+<footer class="chat-home-footer">
+  <div id="palaute" hidden>
+    <a id="feedback-link" class="button button-ghost compact-button" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" aria-describedby="feedback-help">Anna palautetta ↗</a>
+    <span id="feedback-help" class="visually-hidden">Google Forms avautuu uuteen välilehteen. Älä lisää henkilötietoja.</span>
   </div>
-
-  <div class="container footer-bottom">
-    <nav aria-label="Palvelun ehdot ja tietosuoja">
-      <a href="/tietosuoja/">Tietosuojaseloste</a> ·
-      <a href="/kayttoehdot/">Käyttö- ja ostoehdot</a> ·
-      <a href="/peruuttaminen/">Peruuttaminen</a>
-      <a href="#palaute" id="feedback-footer-link" hidden> · Anna palautetta</a>
-    </nav>
-
-    <span>
-      © <span id="year"></span> Autosähköapu AI
-    </span>
-
-    <span>
-      autosahkoapu.fi
-    </span>
-
-  </div>
-
+  <span id="year" hidden></span>
 </footer>
-
 <script src="config.js?v=20261011-feedback-1"></script>
 <script src="feedback.js?v=20261011-1"></script>
-<script src="script.js?v=20261009-1"></script>
-
+<script src="menu.js?v=20261011-1"></script>
+<script src="script.js?v=20261011-chat-1"></script>
 <script src="/analytics-consent.js?v=20261008-1" defer></script>
-</body>
-</html>
-
+</body></html>
