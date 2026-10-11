@@ -24,7 +24,7 @@
   <meta name="theme-color" content="#080b10">
 
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css?v=20261009-1">
+  <link rel="stylesheet" href="style.css?v=20261011-feedback-1">
   <style>
     @media (max-width: 640px) {
       html, body, main, .hero, .hero-grid, .hero-copy {
@@ -797,6 +797,18 @@
   </div>
 </section>
 
+<section id="palaute" class="section section-dark" aria-labelledby="feedback-heading" hidden>
+  <div class="container feedback-card">
+    <div>
+      <p class="eyebrow">Kehitetään yhdessä</p>
+      <h2 id="feedback-heading">Mitä voisimme parantaa?</h2>
+      <p>Kerro kehitysehdotus tai asia, joka ei toiminut. Voit antaa palautteen ilman nimeä tai sähköpostiosoitetta.</p>
+      <p class="feedback-note">Lomake avautuu Google Formsiin. Älä lisää palautteeseen henkilötietoja, rekisteritunnusta tai valmistenumeroa. <a href="/tietosuoja/#palautteen-tietosuoja">Palautteen tietosuoja</a></p>
+    </div>
+    <a id="feedback-link" class="button button-primary" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Anna palautetta <span class="feedback-new-tab">(avautuu uuteen välilehteen)</span></a>
+  </div>
+</section>
+
 </main>
 
 <footer class="site-footer">
@@ -835,6 +847,7 @@
       <a href="/tietosuoja/">Tietosuojaseloste</a> ·
       <a href="/kayttoehdot/">Käyttö- ja ostoehdot</a> ·
       <a href="/peruuttaminen/">Peruuttaminen</a>
+      <a href="#palaute" id="feedback-footer-link" hidden> · Anna palautetta</a>
     </nav>
 
     <span>
@@ -849,7 +862,8 @@
 
 </footer>
 
-<script src="config.js"></script>
+<script src="config.js?v=20261011-feedback-1"></script>
+<script src="feedback.js?v=20261011-1"></script>
 <script src="script.js?v=20261009-1"></script>
 
 <script src="/analytics-consent.js?v=20261008-1" defer></script>
