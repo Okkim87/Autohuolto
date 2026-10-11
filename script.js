@@ -26,21 +26,6 @@ const accessCode = $('access-code');
 const accessStatus = $('access-status');
 const accessTitle = $('access-title');
 
-const menuButton = document.querySelector('.menu-button');
-const mainNav = document.querySelector('.main-nav');
-
-menuButton?.addEventListener('click', () => {
-  const open = mainNav.classList.toggle('open');
-  menuButton.setAttribute('aria-expanded', String(open));
-});
-
-mainNav?.querySelectorAll('a').forEach(a => {
-  a.addEventListener('click', () => {
-    mainNav.classList.remove('open');
-    menuButton?.setAttribute('aria-expanded', 'false');
-  });
-});
-
 $('year').textContent = new Date().getFullYear();
 
 const observer = new IntersectionObserver(
@@ -215,6 +200,7 @@ $('toggle-context').addEventListener('click', () => {
   const box = $('vehicle-context');
 
   box.hidden = !box.hidden;
+  $('toggle-context').setAttribute('aria-expanded', String(!box.hidden));
 
   $('toggle-context').textContent = box.hidden
     ? 'Auton tiedot'
