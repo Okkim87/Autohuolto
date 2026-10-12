@@ -73,7 +73,7 @@
 
 <main>
 <h1>Tietosuojaseloste</h1>
-<p>Päivitetty 11.10.2026. Tämä seloste koskee Autosähköapu AI -verkkopalvelua.</p>
+<p>Päivitetty 12.10.2026. Tämä seloste koskee Autosähköapu AI -verkkopalvelua.</p>
 <h2>1. Rekisterinpitäjä</h2>
 <p>Mikko Minkkinen / Autosähköapu AI, kevytyrittäjä. Yhteydenotot ja tietosuojapyynnöt: <a href="mailto:autosahkoapu@gmail.com">autosahkoapu@gmail.com</a>. Palvelu on maksuttomassa testivaiheessa. Mahdollinen myöhempi myynti ja laskutus on tarkoitus hoitaa Eezy-palvelun kautta. Eezy ei tämän vuoksi ole auton vianetsintäkeskustelujen rekisterinpitäjä.</p>
 <h2>2. Mitä tietoja käsitellään ja miksi?</h2>
@@ -106,6 +106,10 @@
 <p>Edellä mainitut kansainväliset palveluntarjoajat voivat käsitellä tietoja myös EU:n ja ETA:n ulkopuolella, esimerkiksi Yhdysvalloissa. OpenAI:n ja Cloudflaren käsittelysopimuksissa kuvataan kansainvälisten siirtojen suojatoimet, kuten soveltuvat EU:n vakiosopimuslausekkeet tai riittävyyspäätös. Lisätietoja ja tietoja soveltuvista suojatoimista voi pyytää rekisterinpitäjältä.</p>
 <p><a href="https://openai.com/policies/data-processing-addendum/">OpenAI:n käsittelysopimus</a> · <a href="https://www.cloudflare.com/cloudflare-customer-dpa/">Cloudflaren käsittelysopimus</a> · <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHubin tietosuojaseloste</a> · <a href="https://policies.google.com/privacy?hl=fi">Googlen tietosuojaseloste</a>. Palvelu ei käytä NHTSA:n VIN-hakua.</p>
 <h2>5. Säilytysajat</h2>
+<h3 id="obd-mittaukset">Valinnainen OBD-mittausyhteys</h3>
+<p>Android-sovelluksen käyttäjä yhdistää valitut standardimittaukset keskusteluun kertakäyttöisellä yhdistämiskoodilla. Lähetetään vahvistettu merkki, malli, vuosimalli ja moottoritieto sekä valitut lukemat, niiden tila ja mittausikä. VIN:iä, rekisteritunnusta, adapterin Bluetooth-osoitetta tai puhelimen sijaintia ei lueta tähän lähetykseen. Älä lisää henkilötietoja auton tietokenttiin. Käsittely palvelee pyytämääsi vianetsintäapua samalla perusteella kuin muut antamasi mittaustulokset.</p>
+<p>Cloudflaren määräaikaisessa mittausistunnossa säilytetään vain viimeisin lähetetty mittauspaketti, ei jatkuvaa ajohistoriaa. Istunto päättyy viimeistään 30 minuutissa, ja sen tiedot poistetaan automaattisesti. Selaimen Katkaise mittausyhteys poistaa istunnon tiedot heti. Sovelluksen lähetyksen tai autoyhteyden lopetus poistaa viimeiset mittaukset, jos palvelimeen saadaan yhteys; verkkokatkossa tuoreusraja estää vanhojen arvojen käytön ja määräaika poistaa istunnon. Yhdistämiskoodi kelpaa kerran viiden minuutin ajan. Yhteyden tunnisteet säilyvät sovelluksen ja sivun muistissa, eivät URL-osoitteessa tai paikallisessa tallennuksessa.</p>
+<p>Tuoreet mittaukset välitetään OpenAI:lle vain seuraavan vianetsintäviestisi yhteydessä. Tällöin niihin sovelletaan alla kuvattuja tekoälypalvelun säilytyskäytäntöjä; mittausistunnon sulkeminen ei poista jo tekoälypalvelulle lähetettyä aineistoa. Pelkkä mittausyhteyden käyttö ei lähetä mittauksia analytiikkaan. Sovelluksen sisäinen verkkosivu noudattaa samaa analytiikan suostumusvalintaa kuin sivuston muu käyttö.</p>
 <ul>
 <li><strong>Keskustelut ja kuvat:</strong> keskusteluhistoria on sivun käytön aikana selaimen muistissa. Sitä ei tallenneta palvelun omaan asiakasrekisteriin. Lähetetty aineisto kuitenkin käsitellään yllä mainituilla palveluntarjoajilla.</li>
 <li><strong>Aktivointikoodit ja käyttötiedot:</strong> poistetaan viimeistään 90 päivän kuluessa koodin vanhenemisesta. Tämä on rekisterinpitäjän toteuttama poistokäytäntö; koodin vanheneminen ei itsessään poista tietokantatietuetta automaattisesti.</li>

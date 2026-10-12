@@ -46,3 +46,11 @@ class_name = "WebSearchBudget"
 [[migrations]]
 tag = "v2-web-search-budget"
 new_sqlite_classes = ["WebSearchBudget"]
+
+[[durable_objects.bindings]]
+name = "OBD_SESSIONS"
+class_name = "ObdSession"
+
+[[migrations]]
+tag = "v3-obd-sessions"
+new_sqlite_classes = ["ObdSession"]

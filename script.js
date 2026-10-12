@@ -770,6 +770,7 @@ async function send() {
       caseData: currentCase,
       history,
       userMessage: text,
+      obdSession: window.ASAI_OBD?.session() || null,
       attachments: files
     });
 
