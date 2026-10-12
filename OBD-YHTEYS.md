@@ -1,6 +1,6 @@
 # OBD-mittausten yhdistäminen keskusteluun
 
-Android-koeversio 0.7: Bluetooth Classic SPP / ELM327, Android 8+. Yhdistä autoon, vahvista auto ja valitse mittaukset. Sovelluksen Avaa vianetsintä avaa sivun saman Activityn sisälle. Vaihto puhelimen toiseen sovellukseen katkaisee autoyhteyden.
+Android-koeversio 0.8: Bluetooth Classic SPP / ELM327, Android 8+. Yhdistä autoon, vahvista auto. Automaattinen mittausvalinta on oletuksena päällä; käsin valinta on Lisäasetuksissa. Sovelluksen Avaa vianetsintä avaa sivun saman Activityn sisälle. Foreground-palvelu pitää yhteyden myös selaimeen siirryttäessä. Katkaise lopuksi ilmoituksesta tai sovelluksesta.
 
 Aktivoi sivulla testikoodi. OBD → Luo yhdistämiskoodi. Kopioi koodi sovelluksen Syötä koodi -kohtaan. Tarkista sivulla näkyvä auto ja Käytä näitä auton tietoja. Lähetä seuraava oire tai kysymys: Worker tarkistaa oikean auton ja hakee tuoreet mittaukset juuri tälle viestille. Ei automaattisia AI-kutsuja mittausten tahdissa.
 
@@ -17,3 +17,11 @@ Säilytetään vain viimeinen paketti, enintään 84 omaan standardirekisteriin 
 ## Tarkistus oikeassa autossa
 
 Auto turvallisesti paikallaan. Yhdistä koe-APK omalla adapterilla ja vahvista tarkistustulos sekä muutama lukema. Koodilla liittäminen, oikean auton vahvistus ja seuraava kysymys testataan samalla puhelimella sovelluksen sisäisessä keskustelussa. Kokeile myös Bluetooth-katkos, internet-katkos ja lopetus: vanhoja lukemia ei saa merkitä tuoreiksi. Mittauslähetys ei saa vähentää AI-vaiheita. Vain viestipyyntö käyttää normaalia käyttömäärää. Fyysinen koe on vielä tekemättä; Node/Java-testit sekä Android-käännös eivät korvaa sitä.
+
+## 0.8: automaattinen mittausvalinta
+
+Sovellus lähettää /obd/pair-pyynnössä auton tukeman oman standardirekisterin tunnistejoukon. Worker valitsee enintään kuusi toteutettua ja tuettua arvoa keskustelun nykyisen kysymyksen, tarvittaessa vastauksen seuraavan mittauksen tai aiemman oireen mukaan. Ensimmäinen versio käyttää rajattuja, testattavia sääntöryhmiä, ei mallin vapaasti generoimia ELM-komentoja. Mukana perusseuranta, kylmäkäynti, jäähdytysneste, öljylämpö, seossäätö, sytytyskatkoksen olosuhteet, kaasupoljin/läppä, polttoainepaine, EGR, happianturi, imuilma sekä polttoainehöyryt. ABS/airbag/väylämittaukset eivät saa korvikkeeksi moottorin jännitelukemaa: standardivalinta tyhjennetään ja tavallinen lähteistetty vianetsintä jatkuu.
+
+Mittauspyyntö tallentuu nykyiseen määräaikaiseen istuntoon. /obd/upload-vastaus palauttaa plan(revision, ids, reason, names, unavailableNames); ei ylimääräisiä AI-kutsuja. Sovellus validoi yksilölliset olemassa olevat tunnisteet, auton tuen ja kuuden arvon rajan. Se vaihtaa valintaa atomisesti ja ilmoittaa appliedPlanRevision:n sekä samplingMode:n seuraavassa paketissa. Vanha tai virheellinen pyyntö ei korvaa nykyistä valintaa. Worker ei väitä uusia mittauksia saaduiksi pelkän pyynnön tai kuittauksen perusteella: tarvitaan tuore oikea näyte. Käsin tilassa pyyntö jää ehdotukseksi ja käyttäjä määrää valinnan; paluu automaattiseen käyttää viimeistä validoitua suunnitelmaa. Uusi paritus nollaa suunnitelmaversiot.
+
+Vanhemmat APK:t toimivat edelleen käsin valituilla arvoilla, mutta eivät tue automaattista valintaa. Tukilista puuttuu niistä, eikä Worker päättele tukea havaittujen näytteiden perusteella. Ei uusia palvelinmigraatioita tai API-avaimia. Fyysinen 0.8 koe on vielä tehtävä. Testaa keskustelun aiheen vaihtaminen kylmäkäynnistä lämpötilaan, odota noin 10 sekuntia ja varmista uudet tuetut valinnat. Pyynnön vaihtaminen ei itsessään vähennä AI-vaiheita; tavallinen keskusteluviesti vähentää normaalisti.

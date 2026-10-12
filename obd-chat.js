@@ -12,6 +12,7 @@
   async function close() {
     const old = connection; connection = null; snapshot = null;
     el('obd-readings').replaceChildren(); el('obd-vehicle').textContent = '';
+    el('obd-plan-status').textContent = '';
     el('obd-pairing').hidden = true; el('obd-code').textContent = '';
     el('obd-close').hidden = true; el('obd-use-vehicle').hidden = true;
     status('Ei mittausyhteyttä.');
@@ -48,6 +49,11 @@
       const data = await api('/obd/read', { sessionId: current.sessionId, token: current.token });
       if (connection !== current) return;
       snapshot = data; status(states[data.status] || 'Mittausyhteys ei ole käytettävissä.');
+      const plan = data.plan;
+      el('obd-plan-status').textContent = !plan ? (data.vehicle ? 'Automaattinen mittausvalinta vaatii sovelluksen version 0.8 tai uudemman.' : '') :
+        (data.samplingMode === 'manual' ? 'Sovelluksessa on käsin tehtävä mittausvalinta. ' : data.appliedPlanRevision === plan.revision ? 'Sovellus seuraa keskustelun mittausvalintaa. ' : 'Uusi mittausvalinta odottaa sovelluksen seuraavaa päivitystä. ') +
+        plan.reason + ': ' + (plan.names.length ? plan.names.join(', ') : plan.unavailableNames.length ? 'auto ei ilmoita tukea näille arvoille' : 'ei standardimittauksia valittu') +
+        (plan.unavailableNames.length ? '. Auto ei ilmoita tukea: ' + plan.unavailableNames.join(', ') : '') + '.';
       el('obd-pairing').hidden = data.status !== 'waiting';
       el('obd-use-vehicle').hidden = !data.vehicle;
       el('obd-vehicle').textContent = data.vehicle ? 'Sovelluksessa vahvistettu auto: ' + [data.vehicle.make, data.vehicle.model, data.vehicle.year, data.vehicle.engine].join(' · ') + '. Tarkista auto ja käytä näitä tietoja ennen vianetsintää.' : '';
