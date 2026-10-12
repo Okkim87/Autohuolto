@@ -2062,3 +2062,8 @@ canvas{
   .chat-home .chat-access{flex-wrap:wrap}
   .activation-details[open]{flex-basis:100%}
 }
+/* Optional OBD controls remain collapsed on the compact home page. */
+.chat-home .obd-panel { flex: 0 0 auto; max-height: 35dvh; overflow-y: auto; padding: 12px; }
+.obd-panel p { margin: 8px 0; font-size: 13px; }
+.obd-panel ul { padding-left: 20px; font-size: 13px; }
+#obd-code { font-family: monospace; letter-spacing: .08em; }

@@ -24,7 +24,7 @@
   <meta name="theme-color" content="#080b10">
 
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css?v=20261011-chat-1">
+  <link rel="stylesheet" href="style.css?v=20261012-obd-1">
 
 
   <meta
@@ -205,8 +205,21 @@
         >
           Auton tiedot
         </button>
+        <button id="obd-toggle" class="button button-ghost compact-button" type="button" aria-controls="obd-panel" aria-expanded="false">OBD</button>
 
       </div>
+
+      <section id="obd-panel" class="vehicle-context obd-panel" hidden aria-label="Yhdistä auton mittaukset">
+        <p>Yhdistä Android-sovelluksen mittaukset tähän keskusteluun. Aktivoi ensin testikoodi. Yhteys kestää enintään 30 minuuttia.</p>
+        <p id="obd-status" role="status">Ei mittausyhteyttä.</p>
+        <button id="obd-create" class="button button-ghost compact-button" type="button">Luo yhdistämiskoodi</button>
+        <button id="obd-close" class="button button-ghost compact-button" type="button" hidden>Katkaise mittausyhteys</button>
+        <div id="obd-pairing" hidden><p>Syötä tämä koodi OBD-sovellukseen viiden minuutin kuluessa:</p><strong id="obd-code"></strong> <button id="obd-copy" type="button">Kopioi</button></div>
+        <p id="obd-vehicle"></p>
+        <button id="obd-use-vehicle" class="button button-ghost compact-button" type="button" hidden>Käytä näitä auton tietoja</button>
+        <ul id="obd-readings"></ul>
+        <p class="form-note">Vain valitut standardimittaukset lähetetään. VIN:iä, rekisteritunnusta, Bluetooth-osoitetta tai sijaintia ei lähetetä. AI käyttää tuoreita lukemia, kun lähetät seuraavan viestin. Näytteet luetaan peräkkäin. <a href="/tietosuoja/#obd-mittaukset">Tietojen käsittely</a></p>
+      </section>
 
       <div id="vehicle-context" class="vehicle-context" hidden>
 
@@ -447,6 +460,7 @@
 <script src="config.js?v=20261011-feedback-1"></script>
 <script src="feedback.js?v=20261011-1"></script>
 <script src="menu.js?v=20261011-1"></script>
-<script src="script.js?v=20261011-chat-1"></script>
+<script src="script.js?v=20261012-obd-1"></script>
+<script src="obd-chat.js?v=20261012-1"></script>
 <script src="/analytics-consent.js?v=20261008-1" defer></script>
 </body></html>
