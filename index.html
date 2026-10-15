@@ -24,7 +24,7 @@
   <meta name="theme-color" content="#080b10">
 
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css?v=20261012-obd-2">
+  <link rel="stylesheet" href="style.css?v=20261015-1">
 
 
   <meta
@@ -209,8 +209,9 @@
 
       </div>
 
-      <section id="obd-panel" class="vehicle-context obd-panel" hidden aria-label="Yhdistä auton mittaukset">
-        <p>Yhdistä Android-sovelluksen mittaukset tähän keskusteluun. Aktivoi ensin testikoodi. Yhteys kestää enintään 30 minuuttia.</p>
+      <dialog id="obd-panel" class="vehicle-context obd-panel" hidden aria-labelledby="obd-heading">
+        <div class="obd-heading"><h2 id="obd-heading">Auton mittaukset</h2><button id="obd-dismiss" type="button" class="button button-ghost compact-button" autofocus>Sulje</button></div>
+        <details><summary>Yhdistämisohje</summary><p>Aktivoi ensin testikoodi. Luo yhdistämiskoodi ja syötä se Android-sovellukseen. Yhteys kestää enintään 30 minuuttia.</p></details>
         <p id="obd-status" role="status">Ei mittausyhteyttä.</p>
         <p id="obd-plan-status"></p>
         <button id="obd-create" class="button button-ghost compact-button" type="button">Luo yhdistämiskoodi</button>
@@ -219,8 +220,8 @@
         <p id="obd-vehicle"></p>
         <button id="obd-use-vehicle" class="button button-ghost compact-button" type="button" hidden>Käytä näitä auton tietoja</button>
         <ul id="obd-readings"></ul>
-        <p class="form-note">Vain valitut standardimittaukset lähetetään. VIN:iä, rekisteritunnusta, Bluetooth-osoitetta tai sijaintia ei lähetetä. AI käyttää tuoreita lukemia, kun lähetät seuraavan viestin. Näytteet luetaan peräkkäin. <a href="/tietosuoja/#obd-mittaukset">Tietojen käsittely</a></p>
-      </section>
+        <details class="obd-data-info"><summary>Mittausten käyttö ja tietosuoja</summary><p class="form-note">Vain valitut standardimittaukset lähetetään. VIN:iä, rekisteritunnusta, Bluetooth-osoitetta tai sijaintia ei lähetetä. AI käyttää tuoreita lukemia, kun lähetät seuraavan viestin. Näytteet luetaan peräkkäin. <a href="/tietosuoja/#obd-mittaukset">Tietojen käsittely</a></p></details>
+      </dialog>
 
       <div id="vehicle-context" class="vehicle-context" hidden>
 
@@ -340,12 +341,12 @@
             Kehitysvaihe · ilmainen kokeilu
           </strong>
 
-          <small id="access-status">
-            Yksi ilmainen kysymys käytettävissä.
-          </small>
+
         </div>
 
-        <details class="activation-details"><summary>Aktivointikoodi</summary><div class="chat-access-code">
+        <details class="activation-details"><summary>Käyttöoikeus ja koodi</summary>          <small id="access-status">
+            Yksi ilmainen kysymys käytettävissä.
+          </small><div class="chat-access-code">
 
           <input
             id="access-code"
@@ -440,10 +441,10 @@
         <span>Enter lähettää · Shift+Enter rivinvaihto</span>
       </div>
 
-      <p class="form-note chat-safety">
+      <details class="chat-safety"><summary>Turvallinen käyttö</summary><p class="form-note">
         Älä tee korkeajännite-, turvalaite-, polttoaine- tai muita
         vaarallisia mittauksia ilman asianmukaista osaamista ja välineitä.
-      </p>
+      </p></details>
 
     </div>
 
@@ -462,6 +463,6 @@
 <script src="feedback.js?v=20261011-1"></script>
 <script src="menu.js?v=20261011-1"></script>
 <script src="script.js?v=20261012-obd-1"></script>
-<script src="obd-chat.js?v=20261012-2"></script>
+<script src="obd-chat.js?v=20261015-1"></script>
 <script src="/analytics-consent.js?v=20261008-1" defer></script>
 </body></html>

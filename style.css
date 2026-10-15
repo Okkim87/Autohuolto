@@ -2068,3 +2068,29 @@ canvas{
 .obd-panel p { margin: 8px 0; font-size: 13px; }
 .obd-panel ul { padding-left: 20px; font-size: 13px; }
 #obd-code { font-family: monospace; letter-spacing: .08em; }
+
+/* Measurement settings open above the page; they never shrink the conversation. */
+.chat-home #obd-panel { position:fixed; inset:0; margin:auto; width:calc(100% - 28px); max-width:600px; max-height:75dvh; height:fit-content; overflow:auto; padding:16px; color:var(--text); background:#111a28; border:1px solid #35465b; border-radius:16px; box-shadow:0 20px 70px #0009; }
+#obd-panel::backdrop { background:#000a; }
+.obd-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+.obd-heading h2 { margin:0; font-size:1.1rem; }
+.obd-panel summary { cursor:pointer; font-size:.8rem; color:#c4d2e3; padding:8px 0; }
+.chat-home .activation-details { position:relative; }
+.chat-home .activation-details[open] { flex-basis:auto; }
+.chat-home .activation-details[open]>*:not(summary) { position:relative; }
+.chat-home .chat-access #access-status { display:block; }
+.chat-home .chat-safety summary { cursor:pointer; }
+.chat-home .chat-safety p { margin:6px 0; }
+.android-app .nav-wrap { min-height:42px; }
+.android-app .brand-mark { display:none; }
+.android-app .brand strong { font-size:.85rem; }
+.android-app .menu-button { padding:6px 10px; font-size:.8rem; }
+.android-app .chat-home-main { padding-top:4px; }
+.android-app .chat-home-footer { padding:3px 8px; gap:8px; }
+.android-app .chat-home-footer .button, .android-app .chat-home-footer .analytics-settings { font-size:.7rem; padding:4px 8px; }
+@media(max-height:540px) {
+  .chat-home { min-height:0; }
+  .chat-home-footer { display:none; }
+  .chat-home .chat-access { padding:4px 10px; }
+  .chat-home .chat-safety { padding-top:2px; padding-bottom:3px; }
+}

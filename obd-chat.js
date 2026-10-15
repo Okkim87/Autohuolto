@@ -5,10 +5,21 @@
   const status = value => { el('obd-status').textContent = value; };
   const states = { waiting: 'Odotetaan OBD-sovellusta.', live: 'Mittaukset päivittyvät.', stale: 'Mittaukset ovat vanhentuneet.', disconnected: 'Autoyhteys ei ole käynnissä.', expired: 'Mittausyhteys on päättynyt.' };
   window.ASAI_OBD = { session: () => connection ? { sessionId: connection.sessionId, token: connection.token } : null };
+  const panel = el('obd-panel');
+  function dismissPanel() {
+    if (typeof panel.close === 'function') panel.close();
+    panel.hidden = true;
+    el('obd-toggle').setAttribute('aria-expanded', 'false');
+    el('obd-toggle').focus?.();
+  }
   el('obd-toggle').addEventListener('click', () => {
-    const panel = el('obd-panel'); panel.hidden = !panel.hidden;
-    el('obd-toggle').setAttribute('aria-expanded', String(!panel.hidden));
+    if (!panel.hidden) { dismissPanel(); return; }
+    panel.hidden = false;
+    if (typeof panel.showModal === 'function') panel.showModal();
+    el('obd-toggle').setAttribute('aria-expanded', 'true');
   });
+  el('obd-dismiss').addEventListener('click', dismissPanel);
+  panel.addEventListener('cancel', event => { event.preventDefault(); dismissPanel(); });
   async function close() {
     const old = connection; connection = null; snapshot = null;
     el('obd-readings').replaceChildren(); el('obd-vehicle').textContent = '';
@@ -41,6 +52,7 @@
     el('car').value = v.make + ' ' + v.model; el('car-year').value = String(v.year); el('engine').value = v.engine;
     const tool = document.querySelector('input[name="tools"][value="obd"]'); if (tool) tool.checked = true;
     status('Auton tiedot vahvistettu keskusteluun. Lähetä oire tai kysymys.');
+    dismissPanel();
   });
   async function poll() {
     if (!connection || polling || document.hidden) return;
