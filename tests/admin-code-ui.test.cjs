@@ -7,10 +7,9 @@ const context=vm.createContext({document:{getElementById:node,createElement:()=>
 vm.runInContext(fs.readFileSync('admin.js','utf8'),context);
 (async()=>{
  await node('create').handlers.click();assert.equal(calls.length,1);assert.equal(calls[0].url,'https://worker.example/admin/create-code');assert.equal(calls[0].options.redirect,'error');assert.equal(calls[0].options.headers.Authorization,'Bearer TEST-ONLY-SECRET');
- assert.equal(JSON.parse(calls[0].options.body).kind,'ai');assert.equal(node('out').children[0].textContent,'<img src=x onerror=evil()>');assert.equal(node('out').children[1].textContent,'<script>bad()</script>');
+ assert.equal(JSON.parse(calls[0].options.body).kind,'combined');assert.equal(node('out').children[0].textContent,'<img src=x onerror=evil()>');assert.equal(node('out').children[1].textContent,'<script>bad()</script>');
  assert.equal(node('out').children[0].innerHTML,undefined,'server data is always plain text');
- node('kind').value='app';node('kind').handlers.change();assert.equal(node('ai-options').hidden,true);assert.equal(node('app-options').hidden,false);assert.equal(node('copy').hidden,true);
- node('app-days').value='7';await node('create').handlers.click();const body=JSON.parse(calls.at(-1).options.body);assert.equal(body.kind,'app');assert.equal(body.appDays,7);
+ node('plan').value='five';await node('create').handlers.click();const body=JSON.parse(calls.at(-1).options.body);assert.equal(body.kind,'combined');assert.equal(body.plan,'five');assert.equal(body.appDays,undefined);
  await node('copy').handlers.click();assert.equal(copied,'<img src=x onerror=evil()>');
  fail=true;await node('create').handlers.click();assert.equal(node('out').textContent,'denied');assert.equal(node('copy').hidden,true);assert.equal(node('create').disabled,false);assert.equal(node('kind').disabled,false);
  node('worker').value='http://worker.example';await node('create').handlers.click();assert.equal(calls.length,3,'HTTP never receives the admin secret');

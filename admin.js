@@ -2,11 +2,6 @@
 (() => {
   const el = id => document.getElementById(id);
   let code = '', busy = false;
-  el('kind').addEventListener('change', () => {
-    const app = el('kind').value === 'app';
-    el('ai-options').hidden = app; el('app-options').hidden = !app; el('app-help').hidden = !app;
-    code = ''; el('copy').hidden = true; el('out').textContent = '';
-  });
   async function api(path, body) {
     const url = new URL(el('worker').value.trim());
     if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash || !['', '/'].includes(url.pathname)) throw new Error('Anna pelkkä Worker-osoite HTTPS-muodossa.');
@@ -21,7 +16,7 @@
     if (busy) return; busy = true; el('create').disabled = true; el('kind').disabled = true; code = ''; el('copy').hidden = true; el('copy').textContent = 'Kopioi koodi';
     el('out').textContent = 'Luodaan…';
     try {
-      const result = await api('/admin/create-code', { kind: el('kind').value, plan: el('plan').value, appDays: Number(el('app-days').value), note: el('note').value });
+      const result = await api('/admin/create-code', { kind: 'combined', plan: el('plan').value, note: el('note').value });
       const output = document.createElement('div'); output.className = 'codeout'; output.textContent = result.code;
       const description = document.createElement('p'); description.textContent = result.remainingText;
       el('out').replaceChildren(output, description); code = result.code; el('copy').hidden = false;

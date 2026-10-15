@@ -4172,13 +4172,12 @@ async function createCode(request, env, headers) {
 
   const {
     plan = 'single',
-    kind = 'ai',
-    appDays = 30,
+    kind = 'combined',
     note = ''
   } = await request.json();
 
-  if (kind !== 'ai' && kind !== 'app') return json({ error: 'Tuntematon käyttöoikeus.' }, 400, headers);
-  if (kind === 'app') return createAppCode(env, headers, appDays, note);
+  if (!['ai', 'app', 'combined'].includes(kind)) return json({ error: 'Tuntematon käyttöoikeus.' }, 400, headers);
+  // All newly issued codes include both entitlements. Existing KV records stay unchanged.
   const packageInfo = Object.prototype.hasOwnProperty.call(PLAN, plan) ? PLAN[plan] : null;
 
   if (!packageInfo) {
@@ -4188,11 +4187,12 @@ async function createCode(request, env, headers) {
   }
 
   const code =
-    `ASAI-${randomPart()}-${randomPart()}`;
+    `ASAPP-${randomPart()}-${randomPart()}-${randomPart()}-${randomPart()}`;
 
   const now = Date.now();
 
   const rec = {
+    entitlement: 'combined',
     label: packageInfo.label,
     plan,
     credits: packageInfo.credits,
@@ -4213,8 +4213,8 @@ async function createCode(request, env, headers) {
   return json({
     code,
     ...rec,
-    remainingText: remainingText(rec)
-  }, 200, headers);
+    remainingText: remainingText(rec) + ' · sisältää Android-appin'
+  }, 200, { ...headers, 'Cache-Control': 'no-store' });
 }
 
 function randomPart() {
@@ -4237,21 +4237,11 @@ function randomPart() {
 }
 
 
-// Android app entitlement is independent of AI credits. Never trust a client balance.
-const APP_DAYS = new Set([1, 7, 30, 365]);
-async function createAppCode(env, headers, days, note) {
-  if (!APP_DAYS.has(days)) return json({ error: 'Valitse appin voimassaoloajaksi 1, 7, 30 tai 365 päivää.' }, 400, headers);
-  const code = `ASAPP-${randomPart()}-${randomPart()}-${randomPart()}-${randomPart()}`;
-  const now = Date.now();
-  const rec = { entitlement: 'app', plan: 'android', label: `Android-appi · ${days} päivää`, appDays: days, credits: 0, used: 0,
-    createdAt: now, expiresAt: now + days * 86400000, disabled: false, note: String(note).slice(0, 200) };
-  await env.ACCESS_CODES.put(`code:${code}`, JSON.stringify(rec));
-  return json({ code, ...rec, remainingText: `${rec.label} · voimassa ${new Date(rec.expiresAt).toLocaleDateString('fi-FI')} asti · yksi sovellusasennus · ei AI-vaiheita` }, 200, { ...headers, 'Cache-Control': 'no-store' });
-}
+// New combined records include app access independently of remaining AI credits.
 async function appRecord(env, code) {
   const rec = await env.ACCESS_CODES.get(`code:${code}`, 'json');
-  if (!rec || rec.entitlement !== 'app' || rec.disabled || !Number.isFinite(rec.expiresAt) || Date.now() >= rec.expiresAt)
-    throw new UserError('Appikoodi on virheellinen, vanhentunut tai poistettu käytöstä. AI-koodi ei aktivoi appia.');
+  if (!rec || !['app', 'combined'].includes(rec.entitlement) || rec.disabled || !Number.isFinite(rec.expiresAt) || Date.now() >= rec.expiresAt)
+    throw new UserError('Appikoodi on virheellinen, vanhentunut tai poistettu käytöstä. Vanha erillinen AI-koodi ei aktivoi appia.');
   return rec;
 }
 async function activateApp(request, env, headers) {
@@ -4270,7 +4260,7 @@ async function activateApp(request, env, headers) {
       await env.APP_LICENSE_STORAGE.put('app:binding', { installationHash, expiresAt: rec.expiresAt });
     }
     await env.APP_LICENSE_STORAGE.setAlarm(rec.expiresAt);
-    return json({ appAccess: true, expiresAt: rec.expiresAt, leaseMs: Math.min(900000, rec.expiresAt - Date.now()),
+    return json({ appAccess: true, unifiedAccess: rec.entitlement === 'combined', expiresAt: rec.expiresAt, leaseMs: Math.min(900000, rec.expiresAt - Date.now()),
       remainingText: `${rec.label} · voimassa ${new Date(rec.expiresAt).toLocaleDateString('fi-FI')} asti` }, 200, headers);
   } catch (error) {
     return json({ error: error instanceof UserError ? error.message : 'Virheellinen appin aktivointipyyntö.' }, error instanceof UserError ? 403 : error instanceof SyntaxError ? 400 : 503, headers);

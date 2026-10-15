@@ -5,6 +5,38 @@
   const status = value => { el('obd-status').textContent = value; };
   const states = { waiting: 'Odotetaan OBD-sovellusta.', live: 'Mittaukset päivittyvät.', stale: 'Mittaukset ovat vanhentuneet.', disconnected: 'Autoyhteys ei ole käynnissä.', expired: 'Mittausyhteys on päättynyt.' };
   window.ASAI_OBD = { session: () => connection ? { sessionId: connection.sessionId, token: connection.token } : null };
+  let nativeApp = false, nativeResult = null, nativeTurn = 0;
+  // App polls this main-frame result after the user confirms sending measurements.
+  // Capabilities stay in memory; the uploader receives only the one-time pairing code.
+  window.ASAI_APP_OBD = {
+    install() {
+      nativeApp = true; el('obd-create').hidden = true; el('obd-pairing').hidden = true;
+      el('obd-instructions').textContent = 'Yhdistä autoon ja vahvista auton tiedot appissa. Paina yläpalkin Yhdistä mittaukset ja hyväksy lähetys. Erillistä OBD-koodia ei tarvita. Yhteys kestää enintään 30 minuuttia.';
+    },
+    start() {
+      if (!nativeApp || pending) return false;
+      pending = true;
+      const turn = ++nativeTurn;
+      nativeResult = null;
+      (async () => {
+        try {
+          await window.ASAI_APP_READY;
+          if (turn !== nativeTurn) return;
+          if (!activeAccess) throw new Error('Aktivoi keskustelu saamallasi käyttöoikeuskoodilla.');
+          await close(false); status('Yhdistetään appin mittauksia…');
+          const created = await api('/obd/create', { code: activeAccess.code });
+          if (turn !== nativeTurn) { await api('/obd/close', created); return; }
+          connection = created; el('obd-close').hidden = false;
+          nativeResult = { pairCode: created.pairCode };
+          status(states.waiting); await poll();
+        } catch (error) { if (turn === nativeTurn) nativeResult = { error: error.message }; }
+        finally { pending = false; }
+      })();
+      return true;
+    },
+    take() { const result = nativeResult; nativeResult = null; return result; },
+    cancel() { nativeTurn++; nativeResult = null; return close(); }
+  };
   const panel = el('obd-panel');
   function dismissPanel() {
     if (typeof panel.close === 'function') panel.close();
@@ -20,7 +52,8 @@
   });
   el('obd-dismiss').addEventListener('click', dismissPanel);
   panel.addEventListener('cancel', event => { event.preventDefault(); dismissPanel(); });
-  async function close() {
+  async function close(cancelNative = true) {
+    if (cancelNative !== false) { nativeTurn++; nativeResult = null; }
     const old = connection; connection = null; snapshot = null;
     el('obd-readings').replaceChildren(); el('obd-vehicle').textContent = '';
     el('obd-plan-status').textContent = '';
@@ -66,7 +99,7 @@
         (data.samplingMode === 'manual' ? 'Sovelluksessa on käsin tehtävä mittausvalinta. ' : data.appliedPlanRevision === plan.revision ? 'Sovellus seuraa keskustelun mittausvalintaa. ' : 'Uusi mittausvalinta odottaa sovelluksen seuraavaa päivitystä. ') +
         plan.reason + ': ' + (plan.names.length ? plan.names.join(', ') : plan.unavailableNames.length ? 'auto ei ilmoita tukea näille arvoille' : 'ei standardimittauksia valittu') +
         (plan.unavailableNames.length ? '. Auto ei ilmoita tukea: ' + plan.unavailableNames.join(', ') : '') + '.';
-      el('obd-pairing').hidden = data.status !== 'waiting';
+      el('obd-pairing').hidden = nativeApp || data.status !== 'waiting';
       el('obd-use-vehicle').hidden = !data.vehicle;
       el('obd-vehicle').textContent = data.vehicle ? 'Sovelluksessa vahvistettu auto: ' + [data.vehicle.make, data.vehicle.model, data.vehicle.year, data.vehicle.engine].join(' · ') + '. Tarkista auto ja käytä näitä tietoja ennen vianetsintää.' : '';
       const items = (data.measurements || []).map(sample => {
