@@ -294,6 +294,9 @@ export default {
       if (url.pathname.startsWith('/obd/')) {
         return await routeObdRequest(request, env, headers);
       }
+      if (url.pathname === '/app/activate' || url.pathname === '/admin/reset-app-device') {
+        return await routeAccessRequest(request, env, headers);
+      }
       if (url.pathname === '/activate') {
         return await routeAccessRequest(request, env, headers);
       }
@@ -355,6 +358,11 @@ export class AccessGate {
     return result;
   }
 
+  async alarm() {
+    const binding = await this.state.storage.get('app:binding');
+    if (binding && Date.now() >= binding.expiresAt) await this.state.storage.delete('app:binding');
+    else if (binding) await this.state.storage.setAlarm(binding.expiresAt);
+  }
   async handle(request) {
     const headers = corsHeaders(request.headers.get('Origin') || '', this.env.ALLOWED_ORIGIN);
     const storage = this.state.storage;
@@ -364,6 +372,7 @@ export class AccessGate {
     const env = {
       ...this.env,
       OBD_RATE_STORAGE: storage,
+      APP_LICENSE_STORAGE: storage,
       ACCESS_CODES: {
         get: async (key) => {
           const record = await kv.get(key, 'json');
@@ -384,6 +393,8 @@ export class AccessGate {
       }
     };
     const path = new URL(request.url).pathname;
+    if (path === '/app/activate') return activateApp(request, env, headers);
+    if (path === '/admin/reset-app-device') return resetAppDevice(request, env, headers);
     if (path === '/activate') return activate(request, env, headers);
     if (path === '/diagnose') return diagnose(request, env, headers);
     if (path === '/obd/create') return createObdSession(request, env, headers);
@@ -649,6 +660,8 @@ async function getRecord(env, code) {
       'Aktivointikoodi on vanhentunut.'
     );
   }
+
+  if (rec.entitlement === 'app') throw new UserError('Tämä on Android-appin koodi. AI-keskustelu tarvitsee oman koodin.');
 
   if ((rec.credits || 0) <= 0) {
     throw new UserError(
@@ -4159,10 +4172,14 @@ async function createCode(request, env, headers) {
 
   const {
     plan = 'single',
+    kind = 'ai',
+    appDays = 30,
     note = ''
   } = await request.json();
 
-  const packageInfo = PLAN[plan];
+  if (kind !== 'ai' && kind !== 'app') return json({ error: 'Tuntematon käyttöoikeus.' }, 400, headers);
+  if (kind === 'app') return createAppCode(env, headers, appDays, note);
+  const packageInfo = Object.prototype.hasOwnProperty.call(PLAN, plan) ? PLAN[plan] : null;
 
   if (!packageInfo) {
     return json({
@@ -4217,4 +4234,53 @@ function randomPart() {
   }
 
   return result;
+}
+
+
+// Android app entitlement is independent of AI credits. Never trust a client balance.
+const APP_DAYS = new Set([1, 7, 30, 365]);
+async function createAppCode(env, headers, days, note) {
+  if (!APP_DAYS.has(days)) return json({ error: 'Valitse appin voimassaoloajaksi 1, 7, 30 tai 365 päivää.' }, 400, headers);
+  const code = `ASAPP-${randomPart()}-${randomPart()}-${randomPart()}-${randomPart()}`;
+  const now = Date.now();
+  const rec = { entitlement: 'app', plan: 'android', label: `Android-appi · ${days} päivää`, appDays: days, credits: 0, used: 0,
+    createdAt: now, expiresAt: now + days * 86400000, disabled: false, note: String(note).slice(0, 200) };
+  await env.ACCESS_CODES.put(`code:${code}`, JSON.stringify(rec));
+  return json({ code, ...rec, remainingText: `${rec.label} · voimassa ${new Date(rec.expiresAt).toLocaleDateString('fi-FI')} asti · yksi sovellusasennus · ei AI-vaiheita` }, 200, { ...headers, 'Cache-Control': 'no-store' });
+}
+async function appRecord(env, code) {
+  const rec = await env.ACCESS_CODES.get(`code:${code}`, 'json');
+  if (!rec || rec.entitlement !== 'app' || rec.disabled || !Number.isFinite(rec.expiresAt) || Date.now() >= rec.expiresAt)
+    throw new UserError('Appikoodi on virheellinen, vanhentunut tai poistettu käytöstä. AI-koodi ei aktivoi appia.');
+  return rec;
+}
+async function activateApp(request, env, headers) {
+  headers = { ...headers, 'Cache-Control': 'no-store' };
+  try {
+    if (!env.APP_LICENSE_STORAGE) return json({ error: 'Käyttöoikeuden tallennus ei ole käytettävissä.' }, 503, headers);
+    const body = await request.json(), code = cleanCode(body.code);
+    if (!/^ASAPP-(?:[A-HJ-NP-Z2-9]{4}-){3}[A-HJ-NP-Z2-9]{4}$/.test(code) || typeof body.installationId !== 'string' || !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(body.installationId))
+      return json({ error: 'Tarkista appikoodi ja sovellusasennuksen tunniste.' }, 400, headers);
+    const rec = await appRecord(env, code);
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(body.installationId));
+    const installationHash = [...new Uint8Array(digest)].map(v => v.toString(16).padStart(2, '0')).join('');
+    const old = await env.APP_LICENSE_STORAGE.get('app:binding');
+    if (old && old.installationHash !== installationHash) return json({ error: 'Appikoodi on jo käytössä toisessa sovellusasennuksessa. Pyydä ylläpitoa nollaamaan laitesidonta puhelimen vaihtoa varten.' }, 403, headers);
+    if (!old) {
+      await env.APP_LICENSE_STORAGE.put('app:binding', { installationHash, expiresAt: rec.expiresAt });
+    }
+    await env.APP_LICENSE_STORAGE.setAlarm(rec.expiresAt);
+    return json({ appAccess: true, expiresAt: rec.expiresAt, leaseMs: Math.min(900000, rec.expiresAt - Date.now()),
+      remainingText: `${rec.label} · voimassa ${new Date(rec.expiresAt).toLocaleDateString('fi-FI')} asti` }, 200, headers);
+  } catch (error) {
+    return json({ error: error instanceof UserError ? error.message : 'Virheellinen appin aktivointipyyntö.' }, error instanceof UserError ? 403 : error instanceof SyntaxError ? 400 : 503, headers);
+  }
+}
+async function resetAppDevice(request, env, headers) {
+  if (!env.ADMIN_SECRET || request.headers.get('Authorization') !== `Bearer ${env.ADMIN_SECRET}`) return json({ error: 'Ei oikeutta.' }, 401, headers);
+  try {
+    const { code } = await request.json(); await appRecord(env, cleanCode(code));
+    await env.APP_LICENSE_STORAGE.delete('app:binding');
+    return json({ ok: true, message: 'Appikoodin laitesidonta nollattu. Seuraava aktivointi sitoo koodin uuteen asennukseen.' }, 200, { ...headers, 'Cache-Control': 'no-store' });
+  } catch { return json({ error: 'Appikoodia ei voitu nollata.' }, 400, headers); }
 }
