@@ -113,7 +113,7 @@ async function routeObdRequest(request, env, headers) {
   if (!env.OBD_SESSIONS) return json({ error: 'OBD-yhteys ei ole vielä käytössä.' }, 503, headers);
   try {
     const body = await obdBody(request);
-    if (path === '/obd/create') {
+    if (path === '/obd/create' || path === '/obd/resume') {
       const code = cleanCode(body.code);
       if (!code || code.length > 100 || !env.ACCESS_GATE) throw new UserError('Aktivoi käyttö ensin.');
       return env.ACCESS_GATE.get(env.ACCESS_GATE.idFromName(code)).fetch(new Request(request.url, { method: 'POST', headers: request.headers, body: JSON.stringify({ code }) }));
@@ -137,7 +137,7 @@ async function createObdSession(request, env, headers) {
   headers = { ...headers, 'Cache-Control': 'no-store' };
   try {
     const body = await request.json();
-    await getRecord(env, cleanCode(body.code));
+    const access = await getRecord(env, cleanCode(body.code));
     const last = await env.OBD_RATE_STORAGE.get('obd-create-rate');
     const now = Date.now();
     const recent = (last || []).filter(t => now - t < 86400000);
@@ -148,7 +148,44 @@ async function createObdSession(request, env, headers) {
     const created = await obdStub(env, sessionId).fetch(new Request('https://internal/create', { method: 'POST', body: JSON.stringify({ token, expiresAt, pairUntil: now + 300000 }) }));
     if (!created.ok) return json({ error: 'OBD-yhteyttä ei voitu luoda.' }, 503, headers);
     await env.OBD_RATE_STORAGE.put('obd-create-rate', [...recent, now]);
-    return json({ sessionId, token, pairCode: pairCode.match(/.{4}/g).join('-'), expiresAt }, 200, headers);
+    const shared = access.entitlement === 'combined';
+    if (shared) {
+      const previous = await env.OBD_RATE_STORAGE.get('obd-linked');
+      await env.OBD_RATE_STORAGE.put('obd-linked', { sessionId, token, expiresAt });
+      await scheduleAccessAlarm(env.OBD_RATE_STORAGE);
+      if (previous) await obdStub(env, previous.sessionId).fetch(new Request('https://internal/obd/close', { method: 'POST', body: JSON.stringify(previous) }));
+    }
+    return json({ sessionId, token, pairCode: pairCode.match(/.{4}/g).join('-'), expiresAt, shared }, 200, headers);
+  } catch (error) {
+    if (error instanceof UserError) return json({ error: error.message }, 400, headers);
+    throw error;
+  }
+}
+async function scheduleAccessAlarm(storage) {
+  const entries = await Promise.all(['app:binding','obd-linked'].map(key => storage.get(key)));
+  const times = entries.filter(Boolean).map(item => item.expiresAt).filter(Number.isFinite);
+  if (times.length) await storage.setAlarm(Math.max(Date.now() + 1, Math.min(...times)));
+}
+async function resumeObdSession(request, env, headers) {
+  headers = { ...headers, 'Cache-Control': 'no-store' };
+  try {
+    const { code } = await request.json();
+    const access = await getRecord(env, cleanCode(code));
+    // Old AI tester codes may have been shared: never discover their telemetry across browsers.
+    if (access.entitlement !== 'combined') return json({ connection: null, legacy: true }, 200, headers);
+    const linked = await env.OBD_RATE_STORAGE.get('obd-linked');
+    if (!linked) return json({ connection: null }, 200, headers);
+    if (Date.now() >= linked.expiresAt) {
+      await env.OBD_RATE_STORAGE.delete('obd-linked');
+      return json({ connection: null }, 200, headers);
+    }
+    const response = await obdStub(env, linked.sessionId).fetch(new Request('https://internal/obd/read', { method: 'POST', body: JSON.stringify(linked) }));
+    if ([403,410].includes(response.status)) {
+      await env.OBD_RATE_STORAGE.delete('obd-linked');
+      return json({ connection: null }, 200, headers);
+    }
+    if (!response.ok) return json({ error: 'Mittausyhteyttä ei saatu tarkistettua. Yritä uudelleen.' }, 503, headers);
+    return json({ connection: { ...linked, shared: true } }, 200, headers);
   } catch (error) {
     if (error instanceof UserError) return json({ error: error.message }, 400, headers);
     throw error;
@@ -359,9 +396,11 @@ export class AccessGate {
   }
 
   async alarm() {
-    const binding = await this.state.storage.get('app:binding');
-    if (binding && Date.now() >= binding.expiresAt) await this.state.storage.delete('app:binding');
-    else if (binding) await this.state.storage.setAlarm(binding.expiresAt);
+    for (const key of ['app:binding','obd-linked']) {
+      const item = await this.state.storage.get(key);
+      if (item && Date.now() >= item.expiresAt) await this.state.storage.delete(key);
+    }
+    await scheduleAccessAlarm(this.state.storage);
   }
   async handle(request) {
     const headers = corsHeaders(request.headers.get('Origin') || '', this.env.ALLOWED_ORIGIN);
@@ -398,6 +437,7 @@ export class AccessGate {
     if (path === '/activate') return activate(request, env, headers);
     if (path === '/diagnose') return diagnose(request, env, headers);
     if (path === '/obd/create') return createObdSession(request, env, headers);
+    if (path === '/obd/resume') return resumeObdSession(request, env, headers);
     return json({ error: 'Not found' }, 404, headers);
   }
 }
@@ -4259,7 +4299,7 @@ async function activateApp(request, env, headers) {
     if (!old) {
       await env.APP_LICENSE_STORAGE.put('app:binding', { installationHash, expiresAt: rec.expiresAt });
     }
-    await env.APP_LICENSE_STORAGE.setAlarm(rec.expiresAt);
+    await scheduleAccessAlarm(env.APP_LICENSE_STORAGE);
     return json({ appAccess: true, unifiedAccess: rec.entitlement === 'combined', expiresAt: rec.expiresAt, leaseMs: Math.min(900000, rec.expiresAt - Date.now()),
       remainingText: `${rec.label} · voimassa ${new Date(rec.expiresAt).toLocaleDateString('fi-FI')} asti` }, 200, headers);
   } catch (error) {

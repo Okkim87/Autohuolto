@@ -211,12 +211,11 @@
 
       <dialog id="obd-panel" class="vehicle-context obd-panel" hidden aria-labelledby="obd-heading">
         <div class="obd-heading"><h2 id="obd-heading">Auton mittaukset</h2><button id="obd-dismiss" type="button" class="button button-ghost compact-button" autofocus>Sulje</button></div>
-        <details><summary>Yhdistämisohje</summary><p id="obd-instructions">Aktivoi ensin käyttöoikeuskoodi. Luo yhdistämiskoodi ja syötä se Android-sovellukseen. Yhteys kestää enintään 30 minuuttia.</p></details>
+        <details><summary>Yhdistämisohje</summary><p id="obd-instructions">Käytä samaa uutta ASAPP-koodia appissa ja tällä sivulla. Yhdistä autoon ja hyväksy mittausten lähetys appin sisäisessä vianetsinnässä. Valitse tällä sivulla Yhdistä appin mittauksiin. Erillistä OBD-koodia ei tarvita. Yhteys kestää enintään 30 minuuttia.</p></details>
         <p id="obd-status" role="status">Ei mittausyhteyttä.</p>
         <p id="obd-plan-status"></p>
-        <button id="obd-create" class="button button-ghost compact-button" type="button">Luo yhdistämiskoodi</button>
+        <button id="obd-create" class="button button-ghost compact-button" type="button">Yhdistä appin mittauksiin</button>
         <button id="obd-close" class="button button-ghost compact-button" type="button" hidden>Katkaise mittausyhteys</button>
-        <div id="obd-pairing" hidden><p>Syötä tämä koodi OBD-sovellukseen viiden minuutin kuluessa:</p><strong id="obd-code"></strong> <button id="obd-copy" type="button">Kopioi</button></div>
         <p id="obd-vehicle"></p>
         <button id="obd-use-vehicle" class="button button-ghost compact-button" type="button" hidden>Käytä näitä auton tietoja</button>
         <ul id="obd-readings"></ul>
@@ -463,6 +462,6 @@
 <script src="feedback.js?v=20261011-1"></script>
 <script src="menu.js?v=20261011-1"></script>
 <script src="script.js?v=20261015-2"></script>
-<script src="obd-chat.js?v=20261015-2"></script>
+<script src="obd-chat.js?v=20261015-3"></script>
 <script src="/analytics-consent.js?v=20261008-1" defer></script>
 </body></html>
