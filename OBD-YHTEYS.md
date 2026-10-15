@@ -1,3 +1,11 @@
+# Nykyinen käyttöpolku: Android 0.14
+
+Hallinnan uudet ASAPP-koodit sisältävät AI-paketin ja appin saman voimassaolon. Pelkkä selain toimii samalla koodilla ilman appia. Vanhoja koodeja, saldoja ja päättymispäiviä ei muuteta; vanhat erilliset testaajakoodit toimivat kuten ennen.
+
+Aktivoi appi, yhdistä autoon ja vahvista auto. Avaa vianetsintä: tarkistettu uusi yhdistelmäkoodi aktivoi sisäisen keskustelun automaattisesti. Paina appin Yhdistä mittaukset ja hyväksy lähetys. OBD-parituskoodi siirtyy muistissa ilman käyttäjän kirjoittamista. Tarkista keskustelussa auto ja valitse Käytä näitä auton tietoja ennen kysymystä. Tavallisessa ulkoisessa selaimessa ja vanhoissa APK-versioissa käsin tehtävä paritus säilyy. Uusi APK: android-obd/artifacts/Autosahkoapu-OBD-0.14.apk.
+
+Appin oikeus ei kuluta AI-vaiheita. Appin oikeus jatkuu paketin loppuun AI-saldon loputtuakin. Appi sitoutuu yhteen asennukseen, selaimen oikeus toimii aiemman käytännön mukaan. Ei tietokantamigraatiota, uusittuja vanhoja koodeja tai uusia salaisuuksia. Alla aiempien versioiden tekniset kuvaukset.
+
 # OBD-mittausten yhdistäminen keskusteluun
 
 Android-koeversio 0.8: Bluetooth Classic SPP / ELM327, Android 8+. Yhdistä autoon, vahvista auto. Automaattinen mittausvalinta on oletuksena päällä; käsin valinta on Lisäasetuksissa. Sovelluksen Avaa vianetsintä avaa sivun saman Activityn sisälle. Foreground-palvelu pitää yhteyden myös selaimeen siirryttäessä. Katkaise lopuksi ilmoituksesta tai sovelluksesta.

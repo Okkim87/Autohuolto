@@ -11,6 +11,7 @@ const toolNames = {
 };
 
 let activeAccess = null;
+let activationGeneration = 0;
 let history = [];
 let attachments = [];
 let conversationStarted = false;
@@ -156,11 +157,13 @@ async function api(path, body) {
 async function activate() {
   const code = normalizeCode(accessCode.value);
   if (!code) return;
+  const turn = ++activationGeneration;
 
   setAccess('Tarkistetaan koodia…');
 
   try {
     const x = await api('/activate', { code });
+    if (turn !== activationGeneration) return;
 
     activeAccess = { code, ...x };
     localStorage.setItem('asai_access_code', code);
@@ -172,6 +175,7 @@ async function activate() {
       `Käyttö aktivoitu: ${x.label}. ${x.remainingText || ''}`
     );
   } catch (e) {
+    if (turn !== activationGeneration) return;
     activeAccess = null;
     localStorage.removeItem('asai_access_code');
     setAccess(e.message, 'bad');
@@ -179,6 +183,15 @@ async function activate() {
 }
 
 $('activate-code').addEventListener('click', activate);
+
+// Called only by the app in its trusted main-frame page. No native interface is exposed.
+window.ASAI_APP_ACCESS = async code => {
+  code = normalizeCode(code);
+  if (activeAccess?.code === code) return true;
+  accessCode.value = code;
+  await activate();
+  return activeAccess?.code === code;
+};
 
 accessCode.addEventListener('keydown', e => {
   if (e.key === 'Enter') {
