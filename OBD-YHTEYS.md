@@ -1,12 +1,18 @@
-# Nykyinen käyttöpolku: Android 0.14
+# Nykyinen käyttöpolku: Android 0.17 ja yhteinen selainkoodi
 
 Hallinnan uudet ASAPP-koodit sisältävät AI-paketin ja appin saman voimassaolon. Pelkkä selain toimii samalla koodilla ilman appia. Vanhoja koodeja, saldoja ja päättymispäiviä ei muuteta; vanhat erilliset testaajakoodit toimivat kuten ennen.
 
-Aktivoi appi, yhdistä autoon ja vahvista auto. Avaa vianetsintä: tarkistettu uusi yhdistelmäkoodi aktivoi sisäisen keskustelun automaattisesti. Paina appin Yhdistä mittaukset ja hyväksy lähetys. OBD-parituskoodi siirtyy muistissa ilman käyttäjän kirjoittamista. Tarkista keskustelussa auto ja valitse Käytä näitä auton tietoja ennen kysymystä. Tavallisessa ulkoisessa selaimessa ja vanhoissa APK-versioissa käsin tehtävä paritus säilyy. Uusi APK: android-obd/artifacts/Autosahkoapu-OBD-0.14.apk.
+Aktivoi appi, yhdistä autoon ja vahvista auto. Avaa vianetsintä: tarkistettu uusi yhdistelmäkoodi aktivoi sisäisen keskustelun automaattisesti. Paina appin Yhdistä mittaukset ja hyväksy lähetys. OBD-parituskoodi siirtyy muistissa ilman käyttäjän kirjoittamista. Tarkista keskustelussa auto ja valitse Käytä näitä auton tietoja ennen kysymystä. Erillisessä selaimessa aktivoi sama uusi ASAPP-koodi ja valitse OBD → Yhdistä appin mittauksiin. Selain löytää appissa hyväksytyn yhteyden ja odottaa sitä tarvittaessa. Erillistä OBD-koodia ei näytetä eikä syötetä. Nykyinen APK: android-obd/artifacts/Autosahkoapu-OBD-0.17.apk; tämä verkkokorjaus ei vaadi uutta APK:ta.
 
 Appin oikeus ei kuluta AI-vaiheita. Appin oikeus jatkuu paketin loppuun AI-saldon loputtuakin. Appi sitoutuu yhteen asennukseen, selaimen oikeus toimii aiemman käytännön mukaan. Ei tietokantamigraatiota, uusittuja vanhoja koodeja tai uusia salaisuuksia. Alla aiempien versioiden tekniset kuvaukset.
 
-# OBD-mittausten yhdistäminen keskusteluun
+## Yhteisen mittausyhteyden tekninen toteutus
+
+/obd/resume tarkistaa käyttöoikeuden AccessGate-jonossa ja palauttaa vain saman uuden combined-koodin viimeisimmän selainroolin tunnisteen. Appin lähettäjäroolin tunnistetta ei palauteta. Viite säilytetään enintään 30 minuuttia, ajastus huomioi erikseen appin pidemmän asennussidonnan. Uusi istunto sulkee vanhan. Suljettu tai vanhentunut viite poistetaan. Vanhoille ASAI-koodeille ei lisätä hakua toiseen selaimeen, koska niitä on voitu jakaa useammalle testaajalle; ne toimivat appin sisällä aiemman käyttöoikeuden mukaan. Koodit, saldot ja voimassaolot säilyvät.
+
+Selain säilyttää yhteyden tunnisteen vain muistissa. Sivulta poistuminen ei sulje yhteistä lähetystä, mutta nimenomainen Katkaise mittausyhteys sulkee sen. Käyttöoikeuskoodin vaihto tyhjentää paikalliset mittaukset ja estää aiemman istunnon käytön AI-kysymykseen. Myöhäinen vastaus ei palauta suljettua yhteyttä. Käyttöoikeuskoodi on henkilökohtainen: se antaa myös pääsyn näin jaettuihin mittauksiin.
+
+# Aiempi käyttöpolku: versio 0.8 (historia)
 
 Android-koeversio 0.8: Bluetooth Classic SPP / ELM327, Android 8+. Yhdistä autoon, vahvista auto. Automaattinen mittausvalinta on oletuksena päällä; käsin valinta on Lisäasetuksissa. Sovelluksen Avaa vianetsintä avaa sivun saman Activityn sisälle. Foreground-palvelu pitää yhteyden myös selaimeen siirryttäessä. Katkaise lopuksi ilmoituksesta tai sovelluksesta.
 
