@@ -5,11 +5,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
 
-  <title>Auton vikakoodit ja AI-autodiagnostiikka | Autosähköapu AI</title>
+  <title>Auton vianetsintä suomeksi - vikakoodit ja OBD | Autosähköapu</title>
 
   <meta
     name="description"
-    content="Selvitä auton vikakoodit ja oireet mittaamalla, ei arvaamalla. Autosähköapu AI ohjaa OBD-datan, kuvien ja mittaustulosten avulla yksi mittaus kerrallaan."
+    content="Kerro auton oire tai vikakoodi ja aloita vianetsintä suomeksi. Kokeile selaimessa tai yhdistä Android-appin OBD-mittaukset. Kokeilukoodin saat Mikolta."
   >
 
   <meta
@@ -24,12 +24,12 @@
   <meta name="theme-color" content="#080b10">
 
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css?v=20261015-1">
+  <link rel="stylesheet" href="style.css?v=20261018-1">
 
 
   <meta
     property="og:title"
-    content="Auton vikakoodit ja AI-autodiagnostiikka | Autosähköapu AI"
+    content="Auton vianetsintä suomeksi - vikakoodit ja OBD | Autosähköapu"
   >
   <meta
     property="og:description"
@@ -130,7 +130,8 @@
       <a href="/#diagnoosi">Etsi vika autosta</a>
       <a href="/palvelu/#miten">Miten palvelu toimii</a>
       <a href="/palvelu/#oppaat">Oppaat</a>
-      <a href="/palvelu/#kehityksessa">Testikoodi ja kehitys</a>
+      <a href="/palvelu/#kehityksessa">Pyydä kokeilukoodi</a>
+      <a href="/palvelu/#android-appi">Lataa Android-appi</a>
       <a href="/palvelu/#tekijasta">Palvelun tekijä</a>
       <a href="/tietosuoja/">Tietosuoja ja evästeet</a>
       <a href="/kayttoehdot/">Käyttöehdot</a>
@@ -380,9 +381,10 @@
 
             <strong>Autosähköapu AI</strong>
 
-            <p>
+            <p id="chat-intro">
               Kerro auton merkki, malli ja oire. Voit lisätä vikakoodin, mittaustuloksen tai kuvan.
             </p>
+            <a class="chat-trial-link" href="mailto:autosahkoapu@gmail.com?subject=Autos%C3%A4hk%C3%B6apu%20-%20kokeilukoodi">Pyydä maksuton kokeilukoodi Mikolta →</a>
 
 
 
@@ -420,6 +422,7 @@
 
         <textarea
           id="chat-input"
+          aria-label="Viesti auton vianetsintään"
           rows="1"
           placeholder="Kirjoita oire, vikakoodi tai mittaustulos…"
         ></textarea>
@@ -463,5 +466,6 @@
 <script src="menu.js?v=20261011-1"></script>
 <script src="script.js?v=20261015-2"></script>
 <script src="obd-chat.js?v=20261015-3"></script>
+<script src="diagnosis-entry.js?v=20261018-1"></script>
 <script src="/analytics-consent.js?v=20261008-1" defer></script>
 </body></html>

@@ -2094,3 +2094,16 @@ canvas{
   .chat-home .chat-access { padding:4px 10px; }
   .chat-home .chat-safety { padding-top:2px; padding-bottom:3px; }
 }
+
+/* Search guide entry points: visible invitation without shrinking the chat. */
+.guide-page .article-hero{padding:44px 0 24px}
+.guide-page .article-hero h1{font-size:clamp(2rem,5vw,3.5rem);line-height:1.12}
+.guide-start{margin-top:22px}
+.guide-start p,.guide-note{color:#b3bfce;font-size:.9rem;line-height:1.6}
+.guide-start p{max-width:680px}
+.guide-start a:not(.button){color:var(--accent2);text-decoration:underline}
+.guide-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.guide-page .button-primary{color:#080b10}
+.guide-page .button-ghost{color:#edf4fb}
+.chat-trial-link{display:inline-block;font-size:.82rem;line-height:1.5;color:var(--accent2);margin-top:4px}
+@media(max-width:600px){.guide-actions .button,.guide-start>.button{width:100%;text-align:center;white-space:normal}.guide-page .related-links{grid-template-columns:1fr}.guide-page .article-cta{padding:18px}}
