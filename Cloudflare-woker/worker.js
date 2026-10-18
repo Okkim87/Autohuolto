@@ -331,7 +331,13 @@ export default {
       if (url.pathname.startsWith('/obd/')) {
         return await routeObdRequest(request, env, headers);
       }
-      if (url.pathname === '/app/activate' || url.pathname === '/admin/reset-app-device') {
+      if (url.pathname === '/admin/app-installations') {
+        return await appInstallationPage(request, env, headers);
+      }
+      if (url.pathname === '/admin/app-binding' && (!env.ADMIN_SECRET || request.headers.get('Authorization') !== `Bearer ${env.ADMIN_SECRET}`)) {
+        return json({ error: 'Ei oikeutta.' }, 401, { ...headers, 'Cache-Control': 'no-store' });
+      }
+      if (url.pathname === '/app/activate' || url.pathname === '/admin/reset-app-device' || url.pathname === '/admin/app-binding') {
         return await routeAccessRequest(request, env, headers);
       }
       if (url.pathname === '/activate') {
@@ -433,6 +439,7 @@ export class AccessGate {
     };
     const path = new URL(request.url).pathname;
     if (path === '/app/activate') return activateApp(request, env, headers);
+    if (path === '/admin/app-binding') return readAppBinding(request, env, headers);
     if (path === '/admin/reset-app-device') return resetAppDevice(request, env, headers);
     if (path === '/activate') return activate(request, env, headers);
     if (path === '/diagnose') return diagnose(request, env, headers);
@@ -4276,6 +4283,49 @@ function randomPart() {
   return result;
 }
 
+
+// Read existing bindings only. No new installation history or telemetry is stored.
+async function appInstallationPage(request, env, headers) {
+  headers = { ...headers, 'Cache-Control': 'no-store' };
+  if (!env.ADMIN_SECRET || request.headers.get('Authorization') !== `Bearer ${env.ADMIN_SECRET}`) return json({ error: 'Ei oikeutta.' }, 401, headers);
+  const body = await request.json();
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return json({ error: 'Virheellinen tilastopyyntö.' }, 400, headers);
+  if (body.cursor != null && (typeof body.cursor !== 'string' || body.cursor.length > 2048)) return json({ error: 'Virheellinen sivutustunniste.' }, 400, headers);
+  if (!env.ACCESS_GATE || !env.ACCESS_CODES?.list) return json({ error: 'Asennusmäärää ei voida hakea.' }, 503, headers);
+  try {
+    // Each page stays below subrequest limits. The admin UI deduplicates across pages in memory.
+    const page = await env.ACCESS_CODES.list({ prefix: 'code:', limit: 20, ...(body.cursor ? { cursor: body.cursor } : {}) });
+    const names = page.keys.map(key => key.name);
+    const bindings = [];
+    for (const name of names) {
+      const code = name.slice(5);
+      if (!/^ASAPP-(?:[A-HJ-NP-Z2-9]{4}-){3}[A-HJ-NP-Z2-9]{4}$/.test(code)) continue;
+      const response = await env.ACCESS_GATE.get(env.ACCESS_GATE.idFromName(code)).fetch(new Request('https://internal/admin/app-binding', {
+        method: 'POST', headers: { Authorization: `Bearer ${env.ADMIN_SECRET}` }, body: JSON.stringify({ code })
+      }));
+      if (!response.ok) throw new Error('binding_read_failed');
+      const result = await response.json();
+      if (result.installationHash) {
+        if (!/^[a-f0-9]{64}$/.test(result.installationHash)) throw new Error('invalid_binding');
+        bindings.push(result.installationHash);
+      }
+    }
+    if (!page.list_complete && !page.cursor) throw new Error('missing_cursor');
+    return json({ installations: [...new Set(bindings)], boundCodes: bindings.length, scannedCodes: names.length,
+      nextCursor: page.list_complete ? null : page.cursor }, 200, headers);
+  } catch { return json({ error: 'Asennusmäärän haku epäonnistui. Päivitä tilasto uudelleen.' }, 503, headers); }
+}
+async function readAppBinding(request, env, headers) {
+  headers = { ...headers, 'Cache-Control': 'no-store' };
+  if (!env.ADMIN_SECRET || request.headers.get('Authorization') !== `Bearer ${env.ADMIN_SECRET}`) return json({ error: 'Ei oikeutta.' }, 401, headers);
+  const { code } = await request.json();
+  const rec = await env.ACCESS_CODES.get(`code:${cleanCode(code)}`, 'json');
+  if (!rec || !['app', 'combined'].includes(rec.entitlement) || rec.disabled || !Number.isFinite(rec.expiresAt) || Date.now() >= rec.expiresAt) return json({ installationHash: null }, 200, headers);
+  const binding = await env.APP_LICENSE_STORAGE.get('app:binding');
+  if (!binding || !Number.isFinite(binding.expiresAt) || Date.now() >= binding.expiresAt) return json({ installationHash: null }, 200, headers);
+  if (!/^[a-f0-9]{64}$/.test(binding.installationHash)) return json({ error: 'Asennustietoa ei voitu lukea.' }, 503, headers);
+  return json({ installationHash: binding.installationHash }, 200, headers);
+}
 
 // New combined records include app access independently of remaining AI credits.
 async function appRecord(env, code) {
