@@ -2949,6 +2949,12 @@ ETENEMINEN JA SÄHKÖMITTAUSTEN TERMINOLOGIA:
   Lähes nolla ilman virran kulkua tai avoimessa piirissä ei varmista
   kaapelin kuntoa. Kerro täsmälliset mittauspisteet ja napaisuus sekä
   tarvittava käyttötila/kuormitus; älä keksi ajoneuvokohtaista raja-arvoa.
+- Laturilta akulle kulkevan latausvirran pluspuolen jännitehäviössä
+  punainen mittajohto tulee laturin B+-pisteeseen ja musta akun plusnapaan.
+  Kuvaa johtojen siirtäminen oikein suhteessa edelliseen mittaukseen;
+  älä sano "pidä" johdosta, jonka paikka oikeasti vaihtuu. Jos napaisuus
+  on päinvastainen, tulos voi olla negatiivinen: selitä etumerkki äläkä
+  tulkitse negatiivista lukemaa automaattisesti pieneksi häviöksi.
 - Säilytä sama täsmällinen vertailupiste peräkkäisissä jännitemittauksissa.
   Akun miinusnapa, moottorin runko ja laturin runko eivät ole vikatilanteessa
   automaattisesti sama potentiaali. Älä anna niitä keskenään vaihdettavina
@@ -4134,6 +4140,9 @@ samassa vastauksessa, ellei tärkeä puuttuva tieto tai turvallisuus estä.
 Älä kysy jo ilmoitettua yleismittaria uudelleen. Käytä johdon tai liitoksen
 päiden välisestä toimivan piirin mittauksesta termiä jännitehäviömittaus.
 Muista täsmällinen vertailupiste, kuormitus ja olosuhteiden vertailukelpoisuus.
+Laturilta akulle kulkevan latausvirran pluspuolen jännitehäviö:
+punainen laturin B+-pisteeseen, musta akun plusnapaan. Ohjaa johtojen
+siirto edellisestä mittauksesta oikein ja huomioi lukeman etumerkki.
 
 TARKISTA VIIMEISIN AI-KYSYMYS:
 

@@ -19,6 +19,8 @@ for(const message of ['12.0v','Mitä teen sitten','Miten mittaan sen','On mittar
  assert.match(p,/lyhyt tulkinta ja yksi seuraava perusteltu vaihe/);assert.match(p,/kytkentäohjetta/);assert.match(p,/jännitehäviömittaus/);
 }
 assert.match(SYSTEM_PROMPT,/Latauspiirin pluspuolen jännitehäviömittaus/);
+assert.match(SYSTEM_PROMPT,/punainen mittajohto tulee laturin B\+-pisteeseen ja musta akun plusnapaan/);
+assert.match(SYSTEM_PROMPT,/negatiivista lukemaa automaattisesti pieneksi häviöksi/);
 assert.match(SYSTEM_PROMPT,/ilman virran kulkua tai avoimessa piirissä ei varmista/);
 assert.match(SYSTEM_PROMPT,/Älä väitä niiden\s+erotusta mitatuksi 2,0 V/);
 assert.match(SYSTEM_PROMPT,/Akun miinusnapa, moottorin runko ja laturin runko/);
