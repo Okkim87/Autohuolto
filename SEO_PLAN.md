@@ -1,5 +1,15 @@
 # Orgaanisen näkyvyyden työlista
 
+## Päivitys 18.10.2026: oppaasta kokeiluun
+
+Search Consolen vienti 18.10.2026, verkkohaku, aineisto 17.7.–16.10.2026. Viimeiset 28 päivää (19.9.–16.10.): 1 255 näyttökertaa, 31 klikkausta, CTR 2,47 %. Edeltävät 28 päivää (22.8.–18.9.): 219 näyttökertaa, 11 klikkausta, CTR 5,02 %. Keskimääräistä sijoitusta ei käytetä yksin muutoksen onnistumisen mittarina.
+
+Koko viennin sivukohtaiset lähtötiedot: P0171 668 näyttökertaa / 12 klikkausta, P0087 102 / 6, P0101 50 / 0, auton-vikakoodit 122 / 0. Kyselytaulukko ei sisällä kaikkia kokonaistilastojen hakuja, joten sen klikkauksia ei tulkita koko sivuston summaksi.
+
+Toteutus: etusivun ja neljän vikakoodisivun kuvaavat hakutulosotsikot ja kuvaukset, sivun alkuun näkyvä vianetsintäpainike, kolmen sallitun koodin siirto lähettämättömään luonnokseen. Kokeilukoodipyyntö näkyy jo keskustelun aloitusviestissä. Palvelusivulle Android-appin käyttäjän antama Google Drive -latauslinkki, käyttöönotto ja yhden sivun PDF-ohje. Etusivulle ei lisätty pitkiä sisältöosioita. Ei uutta tapahtumaseurantaa, automaattista AI-pyyntöä tai aktivointia.
+
+Vertaa seuraavaksi neljän oppaan klikkauksia ja CTR:ää vastaavaan 28 päivän jaksoon, huomioiden Googlen uudelleenindeksoinnin viive. Tämä muutos ei vielä mittaa kokeilukoodipyynnön toteutumista tai asiakkaaksi siirtymistä. Googlen ohjeet: https://developers.google.com/search/docs/appearance/title-link ja https://developers.google.com/search/docs/appearance/snippet.
+
 Lähtötilanne tarkistettu 4.10.2026. Sivusto julkaistaan GitHub Pagesilla repositorion main-haarasta. Käyttäjän mukaan Google Search Console on käytössä. Search Consolen verkkohakuvienti ajalta 2.–29.9.2026 on analysoitu. Sen perusteella ensimmäinen sisältöprioriteetti on olemassa oleva P0171-opas. Paikallisten hakujen sisältö edellyttää palvelun todellisen tarjonnan vahvistamista. Indeksointitila tarkistetaan erikseen URL-tarkastuksesta.
 
 ## Ensimmäinen toteutettu muutospaketti
