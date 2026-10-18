@@ -1167,6 +1167,7 @@ function prepareConversation(
       year: extractYear(userMessage),
       engine: extractEngine(userMessage),
       dtc: parseDtcCodes(userMessage).join(', '),
+      multimeterAvailability: undefined,
       tools: Array.isArray(rawCase.tools)
         ? rawCase.tools
         : [],
@@ -1504,6 +1505,7 @@ function enrichCaseData(
   caseData.tools = Array.isArray(raw.tools)
     ? raw.tools
     : [];
+  caseData.multimeterAvailability = multimeterEvidence(history, userMessage, raw.multimeterAvailability);
 
   const text = recentUserText(
     history,
@@ -2928,6 +2930,43 @@ caution:
 
 KESKUSTELUN OHJAUS
 
+ETENEMINEN JA SÄHKÖMITTAUSTEN TERMINOLOGIA:
+- Kun käyttäjä antaa pyydetyn mittaustuloksen, tulkitse se lyhyesti ja
+  anna samassa vastauksessa yksi perusteltu seuraava mittaus tai tärkein
+  puuttuva tarkennus. Älä jätä vianetsintää pelkkään tuloksen toistamiseen,
+  ellei käyttäjä pyydä vain tulkintaa tai turvallinen eteneminen ole estynyt.
+- "Mitä teen sitten?" pyytää seuraavaa vaihetta. "Miten mittaan sen?"
+  tai "miten kytken mittarin?" pyytää aiemmin ehdotetun mittauksen
+  konkreettista kytkentää ja mittarin asetusta, ei uutta työkalukyselyä.
+- Jos käyttäjä on ilmoittanut mittarin tai mitannut sillä, älä kysy sen
+  saatavuutta uudelleen. Tarvittaessa varmista vain puuttuva ominaisuus.
+- Johdon, liitoksen tai syöttö-/maadoitusreitin päiden välisen jännitteen
+  mittaus piirin ollessa toiminnassa on JÄNNITEHÄVIÖMITTAUS. Käytä test-
+  kentässä esimerkiksi "Latauspiirin pluspuolen jännitehäviömittaus",
+  älä epämääräistä "jännite-eromittaus"-nimitystä tässä tilanteessa.
+  Erota se akun napajännitteestä ja B+-jännitteen mittauksesta maahan.
+- Jännitehäviö tulkitaan kuormitettuna/toimivan piirin olosuhteissa.
+  Lähes nolla ilman virran kulkua tai avoimessa piirissä ei varmista
+  kaapelin kuntoa. Kerro täsmälliset mittauspisteet ja napaisuus sekä
+  tarvittava käyttötila/kuormitus; älä keksi ajoneuvokohtaista raja-arvoa.
+- Laturilta akulle kulkevan latausvirran pluspuolen jännitehäviössä
+  punainen mittajohto tulee laturin B+-pisteeseen ja musta akun plusnapaan.
+  Kuvaa johtojen siirtäminen oikein suhteessa edelliseen mittaukseen;
+  älä sano "pidä" johdosta, jonka paikka oikeasti vaihtuu. Jos napaisuus
+  on päinvastainen, tulos voi olla negatiivinen: selitä etumerkki äläkä
+  tulkitse negatiivista lukemaa automaattisesti pieneksi häviöksi.
+- Säilytä sama täsmällinen vertailupiste peräkkäisissä jännitemittauksissa.
+  Akun miinusnapa, moottorin runko ja laturin runko eivät ole vikatilanteessa
+  automaattisesti sama potentiaali. Älä anna niitä keskenään vaihdettavina
+  vaihtoehtoina, kun tuloksia käytetään plus- tai maapuolen rajaamiseen.
+- Eri aikaan mitattujen 12,0 V akun navoista ja 14,0 V laturilta perusteella
+  voi ehdottaa latauspiirin suoraa jännitehäviömittausta. Älä väitä niiden
+  erotusta mitatuksi 2,0 V jännitehäviöksi tai kaapelivikaa varmistetuksi.
+- Huomioi myös muut alkuoireet, kuten latauksen merkkivalon puuttuminen.
+  Selvitä sopivassa vaiheessa palaako valo virrat kytkettynä ennen
+  käynnistystä. Älä oleta tietyn auton lampun/herätteen/ohjauksen kytkentää
+  tai päättele polttimo-, sulake- tai ohjausvikaa ilman varmennettua tietoa.
+
 Luokittele käyttäjän uusin viesti asiayhteyden perusteella
 ennen vastauksen muodostamista.
 
@@ -3868,6 +3907,20 @@ YLEISET DIAGNOOSISÄÄNNÖT
 
 // AI:lle toimitettava tapauskohtainen sisältö.
 
+// Only explicit user statements are evidence; an assistant's proposed tool is not.
+function multimeterEvidence(history = [], userMessage = '', previous = '') {
+  const known = ['käyttäjä ilmoitti yleismittarin puuttuvan tai olevan epäkunnossa', 'käyttäjä on ilmoittanut yleismittarin tai tehnyt sillä mittauksen'];
+  let state = known.includes(previous) ? previous : 'ei erillistä vahvistusta';
+  for (const item of [...history, { role: 'user', text: userMessage }]) {
+    if (item?.role !== 'user') continue;
+    for (const part of String(item.text || '').toLowerCase().split(/[.!?;\n]+/)) {
+      if (/(?:ei (?:ole|löydy)(?: enää)? yleismittari|en omista yleismittari|yleismittari(?:ni)? (?:puuttuu|on rikki|ei toimi))/.test(part)) state = 'käyttäjä ilmoitti yleismittarin puuttuvan tai olevan epäkunnossa';
+      else if (/(?:mitattu yleismittarilla|mittasin yleismittarilla|minulla on (?:käytössä )?yleismittari|yleismittari (?:löytyy|on käytössä)|omistan yleismittarin)/.test(part)) state = 'käyttäjä on ilmoittanut yleismittarin tai tehnyt sillä mittauksen';
+    }
+  }
+  return state;
+}
+
 function buildPrompt(
   c,
   history,
@@ -3966,6 +4019,13 @@ ${c.dtc || '-'}
 KÄYTETTÄVISSÄ OLEVAT TYÖKALUT:
 
 ${(c.tools || []).join(', ') || 'ei ilmoitettu'}
+
+KESKUSTELUSTA TUNNISTETTU YLEISMITTARIN SAATAVUUS:
+${multimeterEvidence(history, userMessage, c.multimeterAvailability)}
+Tämä koskee vain mittarin saatavuutta, ei A/10 A -liitäntää, sulakesuojausta
+tai pätevyyttä vaaralliseen mittaukseen. Käyttäjän uusin nimenomainen
+korjaus on voimassa. Valikon työkalulista ei kumoa käyttäjän sanallista
+ilmoitusta tai hänen tällä mittarilla jo tekemäänsä mittausta.
 
 LÄHDEKERROSTEN RAJAUS:
 Haussa löytynyt aineisto ei ole automaattisesti tässä vastauksessa käytettyä
@@ -4074,6 +4134,15 @@ sen luotettavasti.
 UUSIMMAN VIESTIN KÄSITTELY:
 
 Vastaa ensin käyttäjän uusimpaan viestiin.
+Pyydetty mittaustulos: lyhyt tulkinta ja yksi seuraava perusteltu vaihe
+samassa vastauksessa, ellei tärkeä puuttuva tieto tai turvallisuus estä.
+"Miten mittaan sen?" tarkoittaa ehdotetun mittauksen kytkentäohjetta.
+Älä kysy jo ilmoitettua yleismittaria uudelleen. Käytä johdon tai liitoksen
+päiden välisestä toimivan piirin mittauksesta termiä jännitehäviömittaus.
+Muista täsmällinen vertailupiste, kuormitus ja olosuhteiden vertailukelpoisuus.
+Laturilta akulle kulkevan latausvirran pluspuolen jännitehäviö:
+punainen laturin B+-pisteeseen, musta akun plusnapaan. Ohjaa johtojen
+siirto edellisestä mittauksesta oikein ja huomioi lukeman etumerkki.
 
 TARKISTA VIIMEISIN AI-KYSYMYS:
 
