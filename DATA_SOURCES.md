@@ -17,7 +17,7 @@ Worker yrittää hakea merkki-malli-repositorion `signalsets/v3/default.json`-ti
 HV-aiheiset OBDb-signaalit suodatetaan pois palvelun HV-rajauksen vuoksi.
 
 ## Wal33D/dtc-database (valinnainen)
-MIT-lisensoitu SQLite-tietokanta, jossa on geneerisiä ja valmistajakohtaisia DTC-määritelmiä. `Cloudflare-woker/wal33d_to_d1.py` muuntaa sen valinnaiseen D1-tauluun `wal33d_dtc`. Worker käyttää sitä vain jos `OPEN_DTC_DB`-binding on asetettu.
+MIT-lisensoitu SQLite-tietokanta, jossa on geneerisiä ja valmistajakohtaisia DTC-määritelmiä. Yksityisen `autosahkoapu-backend`-repon `wal33d_to_d1.py` muuntaa sen valinnaiseen D1-tauluun `wal33d_dtc`. Worker käyttää sitä vain jos `OPEN_DTC_DB`-binding on asetettu.
 
 ## Turvaraja
 Mikään lähde ei oikeuta keksimään tarkkaa pinniä, johdinväriä, momenttia, jännitettä, vastusarvoa tai muuta mallikohtaista arvoa. Jos varmennettua arvoa ei ole lähdedatassa, AI:n pitää sanoa se suoraan.

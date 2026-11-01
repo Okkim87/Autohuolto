@@ -1,7 +1,6 @@
 User-agent: *
 Allow: /
 Disallow: /admin.html
-Disallow: /Cloudflare-woker/
 Disallow: /README.md
 
 Sitemap: https://autosahkoapu.fi/sitemap.xml

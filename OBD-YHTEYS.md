@@ -22,7 +22,7 @@ Koodi kelpaa kerran viiden minuutin ajan. Istunto 30 minuuttia, näytteiden tuor
 
 ## Käyttöönotto
 
-Worker tarvitsee `OBD_SESSIONS`-sidonnan `ObdSession`-luokkaan ja `v3-obd-sessions`-migraation. Käytä todellista `ready/wrangler.jsonc`-konfiguraatiota aiempine sidontoineen ja salaisuuksineen; repossa olevat KV/D1-tunnukset ovat esimerkkejä. Kopioi worker.js, source-reader.mjs ja obd-parameters.mjs julkaisuun. Julkaise Worker ennen etusivun OBD-ohjaimia. Uusia ulkoisia API-avaimia ei tarvita.
+Worker tarvitsee `OBD_SESSIONS`-sidonnan `ObdSession`-luokkaan ja `v3-obd-sessions`-migraation. Käytä todellista `ready/wrangler.jsonc`-konfiguraatiota aiempine sidontoineen ja salaisuuksineen; yksityisen `autosahkoapu-backend`-repon KV/D1-tunnukset ovat esimerkkejä. Kopioi worker.js, source-reader.mjs ja obd-parameters.mjs julkaisuun. Julkaise Worker ennen etusivun OBD-ohjaimia. Uusia ulkoisia API-avaimia ei tarvita.
 
 `/obd/create` vaatii voimassa olevan aktivointikoodin, käyttää AccessGate-jonotusta ja enintään 30 luontia/24h per koodi, 30s välein. Muut reitit `/obd/pair`, `/obd/upload`, `/obd/read`, `/obd/close`, `/obd/disconnect` tarvitsevat kertakoodin tai istuntokohtaisen 256-bittisen roolitunnisteen. Luontikoodi on 60 satunnaisbittiä, DO-nimi SHA256 koodista. Tunnisteet vain POST-rungossa, ei queryssä, lokissa tai localStoragessa. Pariin liittäminen on atominen ja kertakäyttöinen. Selaimen tunniste lukee/sulkee; sovelluksen tunniste lähettää/katkaisee, ei lue. Sulkemisen jälkeen myöhäinen paketti ei voi elvyttää mittauksia.
 
