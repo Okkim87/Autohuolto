@@ -28,8 +28,8 @@ Testit kattavat vahvistukset, kielteiset ja epävarmat vastaukset, korkeajännit
 ## Julkaisu
 
 1. Julkaise `script.js`, `style.css` ja `images/measurements/*.svg` yhdessä sivustolle. GitHub Pages julkaisee repositorion `main`-haaran juuresta.
-2. Julkaise `Cloudflare-woker/worker.js` Cloudflareen. Säilytä nykyiset salaisuudet, muuttujat ja KV/D1-sidonnat sekä aiemmin käyttöön otettu `ACCESS_GATE` Durable Object.
+2. Julkaise Worker Cloudflareen yksityisestä `autosahkoapu-backend`-reposta. Säilytä nykyiset salaisuudet, muuttujat ja KV/D1-sidonnat sekä aiemmin käyttöön otettu `ACCESS_GATE` Durable Object.
 
 Selain toimii edelleen vanhan Worker-vastauksen kanssa. Kuvia alkaa näkyä, kun myös uusi Worker on julkaistu. Pelkkä Worker-päivitys ei saa vanhaa selaimen JavaScriptiä näyttämään kuvia.
 
-Repositorion Worker sisältää myös aiemmin Cloudflareen julkaistut käyttömäärän, auton vaihtumisen, AI-vastausten validoinnin ja moottoritunnistuksen korjaukset. `wrangler.toml`-tiedoston esimerkkitunnukset on korvattava nykyisillä tuotantotunnuksilla, jos julkaisu tehdään sen kautta.
+Taustarepon Worker sisältää myös aiemmin Cloudflareen julkaistut käyttömäärän, auton vaihtumisen, AI-vastausten validoinnin ja moottoritunnistuksen korjaukset. `wrangler.toml`-tiedoston esimerkkitunnukset on korvattava nykyisillä tuotantotunnuksilla, jos julkaisu tehdään sen kautta.
